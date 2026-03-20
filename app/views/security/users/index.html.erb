@@ -1,0 +1,61 @@
+<% content_for :title, "Ursa Users — Security — BearClaw" %>
+
+<div class="max-w-7xl mx-auto space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white mb-1">Ursa Users</h1>
+    <p class="text-gray-500 text-sm">Native Rails administration for Ursa-local operator accounts.</p>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div class="xl:col-span-1 bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <h2 class="text-lg font-semibold text-white mb-4">Create User</h2>
+      <%= form_with url: security_users_path, method: :post, class: "space-y-3" do %>
+        <%= text_field_tag :username, nil, placeholder: "Username", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+        <%= password_field_tag :password, nil, placeholder: "Password", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+        <%= select_tag :role, options_for_select([["operator", "operator"], ["reviewer", "reviewer"], ["admin", "admin"]]), class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+        <label class="flex items-center gap-2 text-sm text-gray-400"><%= check_box_tag :is_active, "1", true %> Active</label>
+        <%= submit_tag "Create User", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
+      <% end %>
+    </div>
+
+    <div class="xl:col-span-2 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium">ID</th>
+            <th class="px-4 py-3 text-left font-medium">Username</th>
+            <th class="px-4 py-3 text-left font-medium">Role</th>
+            <th class="px-4 py-3 text-left font-medium">Active</th>
+            <th class="px-4 py-3 text-left font-medium">Last Login</th>
+            <th class="px-4 py-3 text-left font-medium">Update</th>
+            <th class="px-4 py-3 text-left font-medium">Password</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          <% @users.each do |user| %>
+            <tr>
+              <td class="px-4 py-3 font-mono text-sky-300"><%= user["id"] %></td>
+              <td class="px-4 py-3 text-white font-mono"><%= user["username"] %></td>
+              <td class="px-4 py-3"><span class="text-xs px-2 py-1 rounded-full <%= ursa_status_classes(user["role"]) %>"><%= user["role"] %></span></td>
+              <td class="px-4 py-3 text-gray-300"><%= user["is_active"] ? "yes" : "no" %></td>
+              <td class="px-4 py-3 text-gray-400"><%= user["last_login_at"] ? ursa_timestamp(user["last_login_at"]) : "-" %></td>
+              <td class="px-4 py-3">
+                <%= form_with url: security_user_path(user["id"]), method: :patch, class: "flex gap-2 items-center" do %>
+                  <%= select_tag :role, options_for_select([["operator", "operator"], ["reviewer", "reviewer"], ["admin", "admin"]], user["role"]), class: "bg-gray-950 border border-gray-800 rounded px-2 py-1 text-xs text-white" %>
+                  <label class="flex items-center gap-1 text-xs text-gray-400"><%= check_box_tag :is_active, "1", user["is_active"] %> active</label>
+                  <%= submit_tag "Save", class: "text-sky-300 text-xs cursor-pointer" %>
+                <% end %>
+              </td>
+              <td class="px-4 py-3">
+                <%= form_with url: password_security_user_path(user["id"]), method: :post, class: "flex gap-2 items-center" do %>
+                  <%= password_field_tag :password, nil, placeholder: "new password", class: "bg-gray-950 border border-gray-800 rounded px-2 py-1 text-xs text-white" %>
+                  <%= submit_tag "Reset", class: "text-amber-300 text-xs cursor-pointer" %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

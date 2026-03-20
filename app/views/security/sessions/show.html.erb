@@ -1,0 +1,132 @@
+<% content_for :title, "Session #{@session["id"]} — Security — BearClaw" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white mb-1 font-mono"><%= @session["id"] %></h1>
+      <p class="text-gray-500 text-sm"><%= "#{@session["username"]}@#{@session["hostname"]}" %></p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-xs px-3 py-1 rounded-full <%= ursa_status_classes(@session["status"]) %>"><%= @session["status"] %></span>
+      <% unless @session["status"] == "dead" %>
+        <%= button_to "Kill Session", kill_security_session_path(@session["id"]), method: :post, class: "px-4 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white text-sm", form: { data: { turbo_confirm: "Kill session #{@session["id"]}?" } } %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <h2 class="text-lg font-semibold text-white mb-4">Session Info</h2>
+      <dl class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <% {
+          "Hostname" => @session["hostname"],
+          "Username" => @session["username"],
+          "Remote IP" => @session["remote_ip"],
+          "Campaign" => @session["campaign"].presence || "-",
+          "Tags" => @session["tags"].presence || "-",
+          "OS" => @session["os"],
+          "Arch" => @session["arch"],
+          "PID" => "#{@session["pid"]} (#{@session["process_name"]})",
+          "First Seen" => ursa_timestamp(@session["first_seen"]),
+          "Last Seen" => "#{ursa_timestamp(@session["last_seen"])} (#{ursa_time_ago(@session["last_seen"])})",
+          "Beacon" => "#{@session["beacon_interval"]}s ± #{((@session["jitter"].to_f * 100).round)}%"
+        }.each do |label, value| %>
+          <div>
+            <dt class="text-gray-500 mb-1"><%= label %></dt>
+            <dd class="text-white font-mono"><%= value %></dd>
+          </div>
+        <% end %>
+      </dl>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <h2 class="text-lg font-semibold text-white mb-4">Context</h2>
+      <%= form_with url: context_security_session_path(@session["id"]), method: :patch, class: "space-y-3" do %>
+        <%= text_field_tag :campaign, @session["campaign"], placeholder: "Campaign", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+        <%= text_field_tag :tags, @session["tags"], placeholder: "Tags", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+        <%= submit_tag "Save Context", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
+      <% end %>
+    </div>
+  </div>
+
+  <% unless @session["status"] == "dead" %>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <h2 class="text-lg font-semibold text-white mb-4">Queue Task</h2>
+      <%= form_with url: queue_task_security_session_path(@session["id"]), method: :post, class: "grid grid-cols-1 md:grid-cols-4 gap-3" do %>
+        <%= select_tag :task_type, options_for_select([["shell", "shell"], ["whoami", "whoami"], ["sysinfo", "sysinfo"], ["ps", "ps"], ["pwd", "pwd"], ["ls", "ls"], ["env", "env"]]), class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+        <div class="md:col-span-2">
+          <%= text_field_tag :command, nil, placeholder: "Shell command", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+        </div>
+        <%= submit_tag "Queue Task", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 gap-6">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-800"><h2 class="text-lg font-semibold text-white">Tasks</h2></div>
+      <table class="w-full text-sm">
+        <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium">ID</th>
+            <th class="px-4 py-3 text-left font-medium">Type</th>
+            <th class="px-4 py-3 text-left font-medium">Status</th>
+            <th class="px-4 py-3 text-left font-medium">Created</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          <% @tasks.each do |task| %>
+            <tr>
+              <td class="px-4 py-3"><%= link_to task["id"], security_task_path(task["id"]), class: "font-mono text-sky-300" %></td>
+              <td class="px-4 py-3 text-white"><%= task["task_type"] %></td>
+              <td class="px-4 py-3"><span class="text-xs px-2 py-1 rounded-full <%= ursa_status_classes(task["status"]) %>"><%= task["status"] %></span></td>
+              <td class="px-4 py-3 text-gray-400"><%= ursa_time_ago(task["created_at"]) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-800"><h2 class="text-lg font-semibold text-white">Files</h2></div>
+      <table class="w-full text-sm">
+        <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium">ID</th>
+            <th class="px-4 py-3 text-left font-medium">Filename</th>
+            <th class="px-4 py-3 text-left font-medium">Direction</th>
+            <th class="px-4 py-3 text-left font-medium">Size</th>
+            <th class="px-4 py-3 text-left font-medium"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          <% @files.each do |file| %>
+            <tr>
+              <td class="px-4 py-3 font-mono text-sky-300"><%= file["id"] %></td>
+              <td class="px-4 py-3 text-white font-mono"><%= file["filename"] %></td>
+              <td class="px-4 py-3 text-gray-400"><%= file["direction"] %></td>
+              <td class="px-4 py-3 text-gray-400"><%= ursa_filesize(file["size"]) %></td>
+              <td class="px-4 py-3"><%= link_to "Download", download_security_file_path(file["id"]), class: "text-sky-300 text-sm" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <h2 class="text-lg font-semibold text-white mb-4">Events</h2>
+      <div class="space-y-3">
+        <% @events.each do |event| %>
+          <div class="border border-gray-800 rounded-lg p-4 bg-gray-950/40">
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-xs px-2 py-1 rounded-full <%= ursa_status_classes(event["level"]) %>"><%= event["level"] %></span>
+              <span class="text-gray-500 text-xs"><%= ursa_time_ago(event["timestamp"]) %></span>
+            </div>
+            <p class="text-white text-sm mt-3"><%= event["message"] %></p>
+            <p class="text-gray-500 text-xs mt-1"><%= event["source"] %></p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

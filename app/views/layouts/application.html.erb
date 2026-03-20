@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "BearClaw" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= yield :head %>
+    <link rel="icon" href="/icon.png" type="image/png">
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col">
+
+    <% if current_user %>
+      <nav class="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-8">
+          <span class="text-white font-bold tracking-wide text-lg">BearClaw</span>
+
+          <div class="flex items-center gap-4 text-sm">
+            <%= link_to "Agent", agent_root_path,
+                  class: "px-3 py-1.5 rounded hover:bg-gray-800 transition #{controller.class.name.start_with?('Agent::') ? 'bg-gray-800 text-white' : 'text-gray-400'}" %>
+
+            <% if current_user.can_access?(:home) %>
+              <%= link_to "Home", home_root_path,
+                    class: "px-3 py-1.5 rounded hover:bg-gray-800 transition #{controller.class.name.start_with?('Home::') ? 'bg-gray-800 text-white' : 'text-gray-400'}" %>
+            <% end %>
+
+            <% if current_user.can_access?(:security) %>
+              <%= link_to "Security", security_root_path,
+                    class: "px-3 py-1.5 rounded hover:bg-gray-800 transition #{controller.class.name.start_with?('Security::') ? 'bg-gray-800 text-white' : 'text-gray-400'}" %>
+            <% end %>
+
+            <% if current_user.admin? %>
+              <%= link_to "Admin", admin_root_path,
+                    class: "px-3 py-1.5 rounded hover:bg-gray-800 transition #{controller.class.name.start_with?('Admin::') ? 'bg-gray-800 text-white' : 'text-gray-400'}" %>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <% if current_user.avatar_url.present? %>
+            <img src="<%= current_user.avatar_url %>" class="w-7 h-7 rounded-full" alt="<%= current_user.name %>">
+          <% end %>
+          <span class="text-gray-400 text-sm"><%= current_user.name %></span>
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium
+            <%= case current_user.role
+                when 'admin'    then 'bg-red-900 text-red-300'
+                when 'operator' then 'bg-blue-900 text-blue-300'
+                when 'reviewer' then 'bg-yellow-900 text-yellow-300'
+                else                 'bg-gray-800 text-gray-400'
+                end %>">
+            <%= current_user.role %>
+          </span>
+          <%= button_to "Sign out", logout_path, method: :post,
+                class: "text-xs text-gray-500 hover:text-gray-300 transition ml-2" %>
+        </div>
+      </nav>
+    <% end %>
+
+    <% if notice.present? %>
+      <div class="bg-green-900/50 border-b border-green-700 text-green-300 text-sm px-6 py-2"><%= notice %></div>
+    <% end %>
+    <% if alert.present? %>
+      <div class="bg-red-900/50 border-b border-red-700 text-red-300 text-sm px-6 py-2"><%= alert %></div>
+    <% end %>
+
+    <main class="flex-1 p-6">
+      <%= yield %>
+    </main>
+
+  </body>
+</html>

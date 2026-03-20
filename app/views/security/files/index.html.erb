@@ -1,0 +1,42 @@
+<% content_for :title, "Files — Security — BearClaw" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white mb-1">Files</h1>
+    <p class="text-gray-500 text-sm">Transferred files across sessions.</p>
+  </div>
+
+  <%= form_with url: security_files_path, method: :get, class: "flex gap-3 bg-gray-900 border border-gray-800 rounded-xl p-4 max-w-xl" do %>
+    <%= text_field_tag :session_id, @filters["session_id"], placeholder: "Filter by session ID", class: "flex-1 bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <%= submit_tag "Filter", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
+  <% end %>
+
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium">ID</th>
+          <th class="px-4 py-3 text-left font-medium">Filename</th>
+          <th class="px-4 py-3 text-left font-medium">Session</th>
+          <th class="px-4 py-3 text-left font-medium">Direction</th>
+          <th class="px-4 py-3 text-left font-medium">Size</th>
+          <th class="px-4 py-3 text-left font-medium">Created</th>
+          <th class="px-4 py-3 text-left font-medium"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800">
+        <% @files.each do |file| %>
+          <tr>
+            <td class="px-4 py-3 font-mono text-sky-300"><%= file["id"] %></td>
+            <td class="px-4 py-3 text-white font-mono"><%= file["filename"] %></td>
+            <td class="px-4 py-3 text-gray-300 font-mono"><%= file["session_id"] %></td>
+            <td class="px-4 py-3 text-gray-400"><%= file["direction"] %></td>
+            <td class="px-4 py-3 text-gray-400"><%= ursa_filesize(file["size"]) %></td>
+            <td class="px-4 py-3 text-gray-400"><%= ursa_time_ago(file["created_at"]) %></td>
+            <td class="px-4 py-3"><%= link_to "Download", download_security_file_path(file["id"]), class: "text-sky-300 text-sm" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

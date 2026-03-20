@@ -1,0 +1,155 @@
+<% content_for :title, "Campaign #{@campaign["campaign_name"]} — Security — BearClaw" %>
+<% filters = @campaign["checklist_filters"] || {} %>
+
+<div class="max-w-7xl mx-auto space-y-6">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white mb-1 font-mono"><%= @campaign["campaign_name"] %></h1>
+      <p class="text-gray-500 text-sm">Campaign detail, notes, checklist, approvals, and handoff exports.</p>
+    </div>
+    <%= link_to "Download Handoff JSON", handoff_security_campaign_path(@campaign["campaign_name"]), class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-200 text-sm" %>
+  </div>
+
+  <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4"><div class="text-2xl font-semibold text-white"><%= @campaign["sessions"].length %></div><p class="text-gray-500 text-sm mt-1">Sessions</p></div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4"><div class="text-2xl font-semibold text-white"><%= @campaign["tasks"].length %></div><p class="text-gray-500 text-sm mt-1">Tasks</p></div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4"><div class="text-2xl font-semibold text-white"><%= @campaign["events"].length %></div><p class="text-gray-500 text-sm mt-1">Events</p></div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4"><div class="text-2xl font-semibold text-amber-300"><%= @campaign["pending_approvals"].length %></div><p class="text-gray-500 text-sm mt-1">Pending approvals</p></div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4"><div class="text-2xl font-semibold text-red-300"><%= @campaign["alerts"].length %></div><p class="text-gray-500 text-sm mt-1">Policy alerts</p></div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4"><div class="text-2xl font-semibold text-sky-300"><%= (@campaign["checklist_counts"] || {}).values.sum - (@campaign["checklist_counts"] || {})["done"].to_i %></div><p class="text-gray-500 text-sm mt-1">Open checklist</p></div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div class="xl:col-span-2 space-y-6">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 class="text-lg font-semibold text-white mb-4">Campaign Notes</h2>
+        <%= form_with url: add_note_security_campaign_path(@campaign["campaign_name"]), method: :post, class: "flex flex-col md:flex-row gap-3 mb-4" do %>
+          <%= text_field_tag :note, nil, placeholder: "Add campaign note...", class: "flex-1 bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+          <%= submit_tag "Add Note", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
+        <% end %>
+        <div class="space-y-3">
+          <% @campaign["notes"].each do |note| %>
+            <div class="border border-gray-800 rounded-lg p-4 bg-gray-950/40">
+              <div class="flex items-center justify-between gap-3">
+                <div class="text-sm text-gray-400"><span class="font-mono text-gray-200"><%= note["author"] %></span> · <%= ursa_time_ago(note["created_at"]) %></div>
+                <%= button_to "Delete", note_security_campaign_path(@campaign["campaign_name"], note_id: note["id"]), method: :delete, class: "text-red-300 text-xs", form: { data: { turbo_confirm: "Delete this note?" } } %>
+              </div>
+              <p class="text-white text-sm mt-3"><%= note["note"] %></p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-white">Campaign Checklist</h2>
+          <%= form_with url: bulk_update_checklist_security_campaign_path(@campaign["campaign_name"]), method: :patch, class: "flex gap-2" do %>
+            <%= hidden_field_tag :status_filter, filters["status"] %>
+            <%= hidden_field_tag :owner_filter, filters["owner"] %>
+            <%= hidden_field_tag :q_filter, filters["q"] %>
+            <%= hidden_field_tag :sort_filter, filters["sort"] %>
+            <%= select_tag :action_status, options_for_select([["Set to in_progress", "in_progress"], ["Set to blocked", "blocked"], ["Set to done", "done"], ["Set to pending", "pending"]]), class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= submit_tag "Apply", class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-200 text-sm cursor-pointer" %>
+          <% end %>
+        </div>
+
+        <%= form_with url: security_campaign_path(@campaign["campaign_name"]), method: :get, class: "grid grid-cols-1 md:grid-cols-5 gap-3" do %>
+          <%= select_tag :status, options_for_select([["All statuses", ""], ["Pending", "pending"], ["In progress", "in_progress"], ["Blocked", "blocked"], ["Done", "done"]], filters["status"]), class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+          <%= text_field_tag :owner, filters["owner"], placeholder: "Owner", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+          <%= text_field_tag :q, filters["q"], placeholder: "Search title/details", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+          <%= select_tag :sort, options_for_select([["Newest", "created_desc"], ["Oldest", "created_asc"], ["Recently updated", "updated_desc"], ["Due soon", "due_asc"], ["Due latest", "due_desc"]], filters["sort"]), class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+          <div class="flex gap-2">
+            <%= submit_tag "Filter", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
+            <%= link_to "Reset", security_campaign_path(@campaign["campaign_name"]), class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-300 text-sm" %>
+          </div>
+        <% end %>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <%= form_with url: add_checklist_item_security_campaign_path(@campaign["campaign_name"]), method: :post, class: "space-y-3 border border-gray-800 rounded-lg p-4" do %>
+            <h3 class="text-white font-medium">Add Checklist Item</h3>
+            <%= text_field_tag :title, nil, placeholder: "Title", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= text_field_tag :details, nil, placeholder: "Details", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= text_field_tag :owner, nil, placeholder: "Owner", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= datetime_local_field_tag :due_at, nil, class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= submit_tag "Add Item", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
+          <% end %>
+
+          <div class="space-y-4 border border-gray-800 rounded-lg p-4">
+            <%= form_with url: apply_playbook_security_campaign_path(@campaign["campaign_name"]), method: :post, class: "space-y-3" do %>
+              <h3 class="text-white font-medium">Apply Playbook</h3>
+              <%= select_tag :playbook, options_for_select((@campaign["playbooks"] || []).map { |playbook| [playbook["name"], playbook["name"]] }), include_blank: "Select playbook", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+              <%= text_field_tag :owner, nil, placeholder: "Owner override", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+              <%= submit_tag "Apply Playbook", class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-200 text-sm cursor-pointer" %>
+            <% end %>
+
+            <%= form_with url: snapshot_playbook_security_campaign_path(@campaign["campaign_name"]), method: :post, class: "space-y-3" do %>
+              <h3 class="text-white font-medium">Snapshot Playbook</h3>
+              <%= text_field_tag :playbook_name, nil, placeholder: "Playbook name", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+              <%= text_field_tag :description, nil, placeholder: "Description", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+              <label class="flex items-center gap-2 text-sm text-gray-400"><%= check_box_tag :only_open, "1", true %> Only open items</label>
+              <%= submit_tag "Snapshot", class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-200 text-sm cursor-pointer" %>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <% @campaign["checklist_items"].each do |item| %>
+            <div class="border border-gray-800 rounded-lg p-4 bg-gray-950/40">
+              <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                  <div class="flex items-center gap-3">
+                    <span class="text-xs px-2 py-1 rounded-full <%= ursa_status_classes(item["status"]) %>"><%= item["status"] %></span>
+                    <p class="text-white font-medium"><%= item["title"] %></p>
+                  </div>
+                  <p class="text-gray-400 text-sm mt-2"><%= item["details"].presence || "No details." %></p>
+                  <p class="text-gray-500 text-xs mt-2">Owner: <span class="font-mono"><%= item["owner"].presence || "-" %></span> · Due: <%= item["due_at"] ? ursa_timestamp(item["due_at"]) : "-" %></p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <%= form_with url: checklist_item_security_campaign_path(@campaign["campaign_name"], item_id: item["id"]), method: :patch do %>
+                    <%= hidden_field_tag :status, item["status"] == "done" ? "pending" : "done" %>
+                    <%= submit_tag(item["status"] == "done" ? "Reopen" : "Mark Done", class: "px-3 py-2 rounded-lg border border-gray-700 text-gray-200 text-xs cursor-pointer") %>
+                  <% end %>
+                  <%= button_to "Delete", checklist_item_security_campaign_path(@campaign["campaign_name"], item_id: item["id"]), method: :delete, class: "px-3 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white text-xs", form: { data: { turbo_confirm: "Delete this checklist item?" } } %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 class="text-lg font-semibold text-white mb-4">Pending Approvals</h2>
+        <div class="space-y-3">
+          <% @campaign["pending_approvals"].each do |approval| %>
+            <div class="border border-gray-800 rounded-lg p-4 bg-gray-950/40">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-xs px-2 py-1 rounded-full <%= ursa_risk_classes(approval["risk_level"]) %>"><%= approval["risk_level"] %></span>
+                <span class="text-gray-500 text-xs"><%= ursa_time_ago(approval["created_at"]) %></span>
+              </div>
+              <p class="text-white text-sm mt-3"><%= approval["action"] %></p>
+              <p class="text-gray-500 text-xs mt-1"><%= approval["reason"] %></p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 class="text-lg font-semibold text-white mb-4">Timeline</h2>
+        <div class="space-y-3 max-h-[32rem] overflow-y-auto">
+          <% @campaign["timeline"].each do |entry| %>
+            <div class="border border-gray-800 rounded-lg p-4 bg-gray-950/40">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-xs uppercase tracking-wide text-gray-500"><%= entry["kind"] %></span>
+                <span class="text-gray-500 text-xs"><%= ursa_time_ago(entry["ts"]) %></span>
+              </div>
+              <p class="text-white text-sm mt-2"><%= entry["summary"] %></p>
+              <p class="text-gray-500 text-xs mt-1"><%= entry["severity"] %></p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

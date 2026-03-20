@@ -1,0 +1,48 @@
+<% content_for :title, "Playbooks — Security — BearClaw" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div class="flex items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white mb-1">Campaign Playbooks</h1>
+      <p class="text-gray-500 text-sm">Reusable checklist templates for campaign execution.</p>
+    </div>
+    <%= link_to "Back to Campaigns", security_campaigns_path, class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-200 text-sm" %>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div class="xl:col-span-1 bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <h2 class="text-lg font-semibold text-white mb-4">Save Playbook</h2>
+      <%= form_with url: save_playbook_security_campaigns_path, method: :post, class: "space-y-3" do %>
+        <%= text_field_tag :name, nil, placeholder: "Playbook name", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+        <%= text_field_tag :description, nil, placeholder: "Description", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+        <%= text_area_tag :items, nil, rows: 10, placeholder: "One item per line: Title | Details | Owner | 1", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+        <%= submit_tag "Save Playbook", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
+      <% end %>
+    </div>
+
+    <div class="xl:col-span-2 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium">Name</th>
+            <th class="px-4 py-3 text-left font-medium">Description</th>
+            <th class="px-4 py-3 text-left font-medium">Items</th>
+            <th class="px-4 py-3 text-left font-medium">Updated</th>
+            <th class="px-4 py-3 text-left font-medium"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          <% @playbooks.each do |playbook| %>
+            <tr>
+              <td class="px-4 py-3 font-mono text-sky-300"><%= playbook["name"] %></td>
+              <td class="px-4 py-3 text-gray-300"><%= playbook["description"].presence || "-" %></td>
+              <td class="px-4 py-3 text-white"><%= Array(playbook["items"]).length %></td>
+              <td class="px-4 py-3 text-gray-400"><%= ursa_timestamp(playbook["updated_at"]) %></td>
+              <td class="px-4 py-3"><%= button_to "Delete", playbook_security_campaigns_path(name: playbook["name"]), method: :delete, class: "text-red-300 text-xs", form: { data: { turbo_confirm: "Delete playbook #{playbook["name"]}?" } } %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

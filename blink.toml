@@ -1,0 +1,127 @@
+[blink]
+version = "1"
+
+# ── Target ────────────────────────────────────────────────────────────────────
+
+[targets.homelab]
+type         = "ssh"
+host         = "blink"
+user         = "admin"
+base         = "/home/admin/baresystems"
+runtime_dir  = "/home/admin/baresystems/runtime/bearclaw-web"
+publish_host = "192.168.86.53"
+port         = "3001"
+image_name   = "bearclaw-web:local"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# bearclaw-web — Rails 8 role-based ops dashboard for Bare Systems
+# Port:    3001 (loopback only — proxied by Tardigrade → bearclaw.home)
+# Vhost:   https://bearclaw.home (wildcard TLS via Tardigrade)
+# DB:      bearclaw-postgres container (postgres:16) on blink
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[services.bearclaw-web]
+description  = "BearClaw Web - role-based ops dashboard for Bare Systems"
+port         = "3001"
+service_name = "bearclaw-web"
+
+# ── Source: bundle the repo as a tarball for upload ──────────────────────────
+# Excludes: git history, node_modules, tmp/log dirs, .env, dist output.
+
+[services.bearclaw-web.source]
+type     = "local_build"
+workdir  = "."
+command  = "mkdir -p dist && COPYFILE_DISABLE=1 COPY_EXTENDED_ATTRIBUTES_DISABLE=1 tar --no-mac-metadata --no-xattrs --no-acls --no-fflags -czf dist/bearclaw-web-repo.tgz --exclude=.git --exclude=.github --exclude=node_modules --exclude=tmp --exclude=log --exclude=dist --exclude=.env --exclude=config/master.key ."
+artifact = "dist/bearclaw-web-repo.tgz"
+
+# ── Pipeline ──────────────────────────────────────────────────────────────────
+
+[services.bearclaw-web.deploy]
+target            = "homelab"
+pipeline          = ["fetch_artifact", "provision", "remote_script", "stop", "install", "start", "health_check", "verify"]
+rollback_pipeline = ["stop", "start", "health_check"]
+
+# ── Provision: create runtime dirs + seed the env file ───────────────────────
+# The env file is only seeded on first deploy (skipped if it already exists).
+# After first deploy, SSH in and fill in the real values before running again.
+
+[services.bearclaw-web.provision]
+dirs = [
+  "{{runtime_dir}}/staging",
+  "{{runtime_dir}}/repo",
+  "{{runtime_dir}}/logs"
+]
+
+[services.bearclaw-web.provision.env_file]
+path = "{{runtime_dir}}/bearclaw-web.env"
+
+[services.bearclaw-web.provision.env_file.seed]
+DATABASE_URL         = "postgres://bearclaw_web:bear_claw_web_prod@192.168.86.53:5432/bear_claw_web_production"
+RAILS_MASTER_KEY     = "${RAILS_MASTER_KEY}"
+GOOGLE_CLIENT_ID     = "${GOOGLE_CLIENT_ID}"
+GOOGLE_CLIENT_SECRET = "${GOOGLE_CLIENT_SECRET}"
+GOOGLE_REDIRECT_URI  = "https://bearclaw.baresystems.com/auth/google_oauth2/callback"
+BEARCLAW_URL         = "http://127.0.0.1:6701"
+BEARCLAW_TOKEN       = "${BEARCLAW_TOKEN}"
+KOALA_URL            = "http://127.0.0.1:6704"
+KOALA_TOKEN          = "${KOALA_TOKEN}"
+URSA_URL             = "http://127.0.0.1:18080"
+URSA_TOKEN           = "${URSA_TOKEN}" # must match major.web.auth.api_token in Ursa
+RAILS_LOG_LEVEL      = "info"
+
+# ── Remote script: postgres DB + Tardigrade vhost (idempotent) ───────────────
+
+[services.bearclaw-web.remote_script]
+path = "deploy/blink/provision_bearclaw_web.sh"
+
+# ── Stop ──────────────────────────────────────────────────────────────────────
+
+[services.bearclaw-web.stop]
+command = "docker stop {{service_name}} 2>/dev/null || true && docker rm {{service_name}} 2>/dev/null || true"
+
+# ── Install: upload the tarball to remote staging ────────────────────────────
+
+[services.bearclaw-web.install]
+dest = "runtime/bearclaw-web/staging/bearclaw-web-repo.tgz"
+
+# ── Start: extract repo, build image, run container ──────────────────────────
+
+[services.bearclaw-web.start]
+command = "rm -rf {{runtime_dir}}/repo && mkdir -p {{runtime_dir}}/repo && tar -xzf {{runtime_dir}}/staging/bearclaw-web-repo.tgz -C {{runtime_dir}}/repo && docker build -t {{image_name}} {{runtime_dir}}/repo && docker run -d --name {{service_name}} --restart unless-stopped -p 127.0.0.1:{{port}}:80 --env-file {{runtime_dir}}/bearclaw-web.env {{image_name}}"
+
+# ── Health check ──────────────────────────────────────────────────────────────
+
+[services.bearclaw-web.health_check]
+url      = "http://127.0.0.1:{{port}}/login"
+timeout  = 120
+interval = 3
+
+# ── Verify ────────────────────────────────────────────────────────────────────
+
+[services.bearclaw-web.verify]
+tags = ["smoke", "health"]
+
+[services.bearclaw-web.verify.tests.login-page]
+type          = "http"
+url           = "http://127.0.0.1:{{port}}/login"
+expect_status = 200
+expect_body   = "BearClaw"
+tags          = ["smoke"]
+
+[services.bearclaw-web.verify.tests.rails-health]
+type          = "http"
+url           = "http://127.0.0.1:{{port}}/up"
+expect_status = 200
+tags          = ["smoke", "health"]
+
+[services.bearclaw-web.verify.tests.container-running]
+type          = "shell"
+command       = "docker inspect --format '{{.State.Status}}' {{service_name}} 2>/dev/null"
+expect_output = "running"
+tags          = ["health"]
+
+[services.bearclaw-web.verify.tests.port-published]
+type          = "shell"
+command       = "docker ps --filter name=^/{{service_name}}$ --format '{{.Ports}}'"
+expect_output = "/127\\.0\\.0\\.1:3001->80\\/tcp/"
+tags          = ["health"]

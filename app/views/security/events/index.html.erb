@@ -1,0 +1,35 @@
+<% content_for :title, "Events — Security — BearClaw" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white mb-1">Events</h1>
+    <p class="text-gray-500 text-sm">Operational event log across sessions and campaigns.</p>
+  </div>
+
+  <%= form_with url: security_events_index_path, method: :get, class: "grid grid-cols-1 md:grid-cols-5 gap-3 bg-gray-900 border border-gray-800 rounded-xl p-4" do %>
+    <%= select_tag :level, options_for_select([["All levels", ""], ["info", "info"], ["warning", "warning"], ["error", "error"]], @filters["level"]), class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <%= text_field_tag :session_id, @filters["session_id"], placeholder: "Session ID", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <%= text_field_tag :campaign, @filters["campaign"], placeholder: "Campaign", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <%= text_field_tag :tag, @filters["tag"], placeholder: "Tag", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <div class="flex gap-2">
+      <%= submit_tag "Filter", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
+      <%= link_to "Reset", security_events_index_path, class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-300 text-sm" %>
+    </div>
+  <% end %>
+
+  <div class="space-y-3">
+    <% @events.each do |event| %>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <span class="text-xs px-2 py-1 rounded-full <%= ursa_status_classes(event["level"]) %>"><%= event["level"] %></span>
+            <span class="text-xs text-gray-500"><%= event["source"] %></span>
+          </div>
+          <span class="text-gray-500 text-xs"><%= ursa_time_ago(event["timestamp"]) %></span>
+        </div>
+        <p class="text-white text-sm mt-3"><%= event["message"] %></p>
+        <p class="text-gray-500 text-xs mt-1 font-mono"><%= event["campaign"].presence || "-" %></p>
+      </div>
+    <% end %>
+  </div>
+</div>

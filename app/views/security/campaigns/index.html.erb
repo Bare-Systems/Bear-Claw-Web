@@ -1,0 +1,36 @@
+<% content_for :title, "Campaigns — Security — BearClaw" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div class="flex items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white mb-1">Campaigns</h1>
+      <p class="text-gray-500 text-sm">Campaign-centric operational view across sessions, tasks, events, and approvals.</p>
+    </div>
+    <%= link_to "Manage Playbooks", playbooks_security_campaigns_path, class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-200 text-sm" %>
+  </div>
+
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium">Campaign</th>
+          <th class="px-4 py-3 text-left font-medium">Sessions</th>
+          <th class="px-4 py-3 text-left font-medium">Tasks</th>
+          <th class="px-4 py-3 text-left font-medium">Events</th>
+          <th class="px-4 py-3 text-left font-medium">Pending Approvals</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800">
+        <% @campaigns.each do |name, counts| %>
+          <tr class="hover:bg-gray-800/40">
+            <td class="px-4 py-3"><%= link_to name, security_campaign_path(name), class: "font-mono text-sky-300" %></td>
+            <td class="px-4 py-3 text-white"><%= counts["sessions"] %></td>
+            <td class="px-4 py-3 text-white"><%= counts["tasks"] %></td>
+            <td class="px-4 py-3 text-white"><%= counts["events"] %></td>
+            <td class="px-4 py-3 text-amber-300"><%= counts["approvals"] %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

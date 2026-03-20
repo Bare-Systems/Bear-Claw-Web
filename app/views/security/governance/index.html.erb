@@ -1,0 +1,144 @@
+<% content_for :title, "Governance — Security — BearClaw" %>
+<% approvals = @governance["approvals"] || [] %>
+
+<div class="max-w-7xl mx-auto space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white mb-1">Governance</h1>
+    <p class="text-gray-500 text-sm">Approvals, campaign policies, remediation workflows, and immutable audit coverage.</p>
+  </div>
+
+  <%= form_with url: security_governance_index_path, method: :get, class: "grid grid-cols-1 md:grid-cols-5 gap-3 bg-gray-900 border border-gray-800 rounded-xl p-4" do %>
+    <%= select_tag :status, options_for_select([["Pending", "pending"], ["Approved", "approved"], ["Rejected", "rejected"]], @filters["status"]), class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <%= text_field_tag :campaign, @filters["campaign"], placeholder: "Campaign", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <%= text_field_tag :tag, @filters["tag"], placeholder: "Tag", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <%= select_tag :risk_level, options_for_select([["All risk", ""], ["Critical", "critical"], ["High", "high"], ["Medium", "medium"], ["Low", "low"]], @filters["risk_level"]), class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <div class="flex gap-2">
+      <%= submit_tag "Filter", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
+      <%= link_to "Report", report_security_governance_index_path, class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-200 text-sm" %>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5"><div class="text-2xl font-semibold <%= @governance["audit_check"]["ok"] ? "text-emerald-300" : "text-red-300" %>"><%= @governance["audit_check"]["ok"] ? "OK" : "FAIL" %></div><p class="text-gray-500 text-sm mt-1">Audit integrity</p></div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5"><div class="text-2xl font-semibold text-amber-300"><%= approvals.length %></div><p class="text-gray-500 text-sm mt-1"><%= @filters["status"].to_s.upcase %> approvals</p></div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5"><div class="text-2xl font-semibold text-sky-300"><%= @governance["audit_check"]["checked"] %></div><p class="text-gray-500 text-sm mt-1">Audit events verified</p></div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <div class="xl:col-span-2 space-y-6">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-800"><h2 class="text-lg font-semibold text-white">Approvals</h2></div>
+        <table class="w-full text-sm">
+          <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+            <tr>
+              <th class="px-4 py-3 text-left font-medium">ID</th>
+              <th class="px-4 py-3 text-left font-medium">Risk</th>
+              <th class="px-4 py-3 text-left font-medium">Action</th>
+              <th class="px-4 py-3 text-left font-medium">Campaign</th>
+              <th class="px-4 py-3 text-left font-medium">Created</th>
+              <th class="px-4 py-3 text-left font-medium"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800">
+            <% approvals.each do |approval| %>
+              <tr>
+                <td class="px-4 py-3 font-mono text-sky-300"><%= approval["id"] %></td>
+                <td class="px-4 py-3"><span class="text-xs px-2 py-1 rounded-full <%= ursa_risk_classes(approval["risk_level"]) %>"><%= approval["risk_level"] %></span></td>
+                <td class="px-4 py-3 text-white font-mono"><%= approval["action"] %></td>
+                <td class="px-4 py-3 text-gray-300 font-mono"><%= approval["campaign"].presence || "-" %></td>
+                <td class="px-4 py-3 text-gray-400"><%= ursa_time_ago(approval["created_at"]) %></td>
+                <td class="px-4 py-3">
+                  <% if @filters["status"] == "pending" %>
+                    <div class="flex gap-2">
+                      <%= button_to "Approve", approve_security_governance_index_path(approval_id: approval["id"]), method: :post, class: "text-emerald-300 text-xs" %>
+                      <%= button_to "Reject", reject_security_governance_index_path(approval_id: approval["id"]), method: :post, class: "text-red-300 text-xs" %>
+                    </div>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <h2 class="text-lg font-semibold text-white mb-4">Bulk Approval Action</h2>
+          <%= form_with url: bulk_approvals_security_governance_index_path, method: :post, class: "space-y-3" do %>
+            <%= text_field_tag :campaign, @filters["campaign"], placeholder: "Campaign", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= text_field_tag :tag, @filters["tag"], placeholder: "Tag", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= select_tag :risk_level, options_for_select([["All risk", ""], ["Critical", "critical"], ["High", "high"], ["Medium", "medium"], ["Low", "low"]]), class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= select_tag :decision, options_for_select([["Approve", "approve"], ["Reject", "reject"]]), class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= text_field_tag :note, nil, placeholder: "Audit note", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= submit_tag "Run Bulk Action", class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-200 text-sm cursor-pointer" %>
+          <% end %>
+        </div>
+
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <h2 class="text-lg font-semibold text-white mb-4">Remediation</h2>
+          <%= form_with url: apply_remediation_security_governance_index_path, method: :post, class: "space-y-3 mb-4" do %>
+            <%= text_field_tag :campaign, @filters["campaign"], placeholder: "Campaign", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= select_tag :strategy, options_for_select([["reduce-critical", "reduce-critical"], ["reduce-high", "reduce-high"], ["clear-backlog", "clear-backlog"]]), class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= text_field_tag :note, nil, placeholder: "Audit note", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= submit_tag "Apply Remediation", class: "px-4 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white text-sm cursor-pointer" %>
+          <% end %>
+
+          <%= form_with url: create_remediation_checklist_security_governance_index_path, method: :post, class: "space-y-3" do %>
+            <%= text_field_tag :campaign, @filters["campaign"], placeholder: "Campaign", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= text_field_tag :owner, nil, placeholder: "Owner", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= number_field_tag :due_in_hours, 24, class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+            <%= submit_tag "Create Checklist From Alerts", class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-200 text-sm cursor-pointer" %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 class="text-lg font-semibold text-white mb-4">Campaign Policies</h2>
+        <%= form_with url: upsert_policy_security_governance_index_path, method: :post, class: "space-y-3 mb-5" do %>
+          <%= text_field_tag :campaign, nil, placeholder: "Campaign", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+          <%= number_field_tag :max_pending_total, 20, class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+          <%= number_field_tag :max_pending_high, 10, class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+          <%= number_field_tag :max_pending_critical, 2, class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+          <%= number_field_tag :max_oldest_pending_minutes, 60, class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+          <%= text_field_tag :note, nil, placeholder: "Note", class: "w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+          <%= submit_tag "Save Policy", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
+        <% end %>
+
+        <div class="space-y-3">
+          <% (@governance["policies"] || []).each do |policy| %>
+            <div class="border border-gray-800 rounded-lg p-4 bg-gray-950/40">
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-white font-mono"><%= policy["campaign"] %></p>
+                <%= button_to "Delete", policy_security_governance_index_path(campaign: policy["campaign"]), method: :delete, class: "text-red-300 text-xs", form: { data: { turbo_confirm: "Delete policy #{policy["campaign"]}?" } } %>
+              </div>
+              <p class="text-gray-400 text-xs mt-2">total=<%= policy["max_pending_total"] %> high=<%= policy["max_pending_high"] %> critical=<%= policy["max_pending_critical"] %> oldest=<%= policy["max_oldest_pending_minutes"] %>m</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 class="text-lg font-semibold text-white mb-4">Risk Matrix</h2>
+        <pre class="bg-gray-950 border border-gray-800 rounded-lg p-4 text-xs text-gray-200 whitespace-pre-wrap"><%= @governance["risk_matrix"] %></pre>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 class="text-lg font-semibold text-white mb-4">Immutable Audit</h2>
+        <div class="space-y-3 max-h-[24rem] overflow-y-auto">
+          <% (@governance["audit_events"] || []).each do |event| %>
+            <div class="border border-gray-800 rounded-lg p-4 bg-gray-950/40">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-xs text-gray-500"><%= ursa_timestamp(event["timestamp"]) %></span>
+                <span class="text-xs px-2 py-1 rounded-full <%= ursa_risk_classes(event["risk_level"]) %>"><%= event["risk_level"] %></span>
+              </div>
+              <p class="text-white text-sm mt-2"><%= event["action"] %></p>
+              <p class="text-gray-500 text-xs mt-1"><%= event["actor"] %> · <%= event["policy_result"] %></p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

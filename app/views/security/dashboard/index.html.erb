@@ -1,0 +1,98 @@
+<% content_for :title, "Security — BearClaw" %>
+
+<div class="max-w-6xl mx-auto">
+  <h1 class="text-2xl font-bold text-white mb-1">Security</h1>
+  <p class="text-gray-500 text-sm mb-8">Ursa Major operations are now routed through BearClawWeb and restricted to admin users.</p>
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div class="text-3xl font-semibold text-emerald-300"><%= @overview["active_count"] %></div>
+      <p class="text-gray-500 text-sm mt-2">Active sessions</p>
+    </div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div class="text-3xl font-semibold text-amber-300"><%= @overview["pending_approvals"] %></div>
+      <p class="text-gray-500 text-sm mt-2">Pending approvals</p>
+    </div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div class="text-3xl font-semibold text-red-300"><%= @overview["policy_alert_count"] %></div>
+      <p class="text-gray-500 text-sm mt-2">Policy alerts</p>
+    </div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div class="text-3xl font-semibold text-sky-300"><%= @overview["total_sessions"] %></div>
+      <p class="text-gray-500 text-sm mt-2">Total sessions</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <%= link_to security_sessions_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
+      <h2 class="text-white font-semibold mb-1">Sessions</h2>
+      <p class="text-gray-500 text-sm">Active and historical implant sessions</p>
+    <% end %>
+    <%= link_to security_tasks_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
+      <h2 class="text-white font-semibold mb-1">Tasks</h2>
+      <p class="text-gray-500 text-sm">Task queue and results</p>
+    <% end %>
+    <%= link_to security_campaigns_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
+      <h2 class="text-white font-semibold mb-1">Campaigns</h2>
+      <p class="text-gray-500 text-sm">Engagements and playbooks</p>
+    <% end %>
+    <%= link_to security_governance_index_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
+      <h2 class="text-white font-semibold mb-1">Governance</h2>
+      <p class="text-gray-500 text-sm">Approvals and policy alerts</p>
+    <% end %>
+    <%= link_to security_events_index_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
+      <h2 class="text-white font-semibold mb-1">Events</h2>
+      <p class="text-gray-500 text-sm">Immutable event history</p>
+    <% end %>
+    <%= link_to security_files_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
+      <h2 class="text-white font-semibold mb-1">Files</h2>
+      <p class="text-gray-500 text-sm">Transfer inventory and downloads</p>
+    <% end %>
+    <%= link_to security_users_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
+      <h2 class="text-white font-semibold mb-1">Ursa Users</h2>
+      <p class="text-gray-500 text-sm">Ursa local account administration</p>
+    <% end %>
+    <%= link_to playbooks_security_campaigns_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
+      <h2 class="text-white font-semibold mb-1">Playbooks</h2>
+      <p class="text-gray-500 text-sm">Reusable campaign checklist playbooks</p>
+    <% end %>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-800">
+        <h2 class="text-lg font-semibold text-white">Recent Tasks</h2>
+      </div>
+      <div class="divide-y divide-gray-800">
+        <% @overview["recent_tasks"].each do |task| %>
+          <div class="px-5 py-4">
+            <div class="flex items-center justify-between gap-3">
+              <%= link_to task["id"], security_task_path(task["id"]), class: "font-mono text-sky-300 text-sm" %>
+              <span class="text-xs px-2 py-1 rounded-full <%= ursa_status_classes(task["status"]) %>"><%= task["status"] %></span>
+            </div>
+            <p class="text-white text-sm mt-2"><%= task["task_type"] %></p>
+            <p class="text-gray-500 text-xs mt-1"><%= ursa_time_ago(task["created_at"]) %></p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-800">
+        <h2 class="text-lg font-semibold text-white">Recent Events</h2>
+      </div>
+      <div class="divide-y divide-gray-800">
+        <% @overview["recent_events"].each do |event| %>
+          <div class="px-5 py-4">
+            <div class="flex items-center justify-between gap-3">
+              <span class="text-xs px-2 py-1 rounded-full <%= ursa_status_classes(event["level"]) %>"><%= event["level"] %></span>
+              <span class="text-gray-500 text-xs"><%= ursa_time_ago(event["timestamp"]) %></span>
+            </div>
+            <p class="text-white text-sm mt-2"><%= event["message"] %></p>
+            <p class="text-gray-500 text-xs mt-1"><%= event["source"] %></p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

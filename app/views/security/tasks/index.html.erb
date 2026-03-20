@@ -1,0 +1,46 @@
+<% content_for :title, "Tasks — Security — BearClaw" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white mb-1">Tasks</h1>
+    <p class="text-gray-500 text-sm">Queued and completed operator tasks.</p>
+  </div>
+
+  <%= form_with url: security_tasks_path, method: :get, class: "grid grid-cols-1 md:grid-cols-5 gap-3 bg-gray-900 border border-gray-800 rounded-xl p-4" do %>
+    <%= text_field_tag :session_id, @filters["session_id"], placeholder: "Session ID", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <%= select_tag :status, options_for_select([["All statuses", ""], ["Pending", "pending"], ["In progress", "in_progress"], ["Completed", "completed"], ["Error", "error"]], @filters["status"]), class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <%= text_field_tag :campaign, @filters["campaign"], placeholder: "Campaign", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <%= text_field_tag :tag, @filters["tag"], placeholder: "Tag", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
+    <div class="flex gap-2">
+      <%= submit_tag "Filter", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
+      <%= link_to "Reset", security_tasks_path, class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-300 text-sm" %>
+    </div>
+  <% end %>
+
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium">ID</th>
+          <th class="px-4 py-3 text-left font-medium">Session</th>
+          <th class="px-4 py-3 text-left font-medium">Campaign</th>
+          <th class="px-4 py-3 text-left font-medium">Type</th>
+          <th class="px-4 py-3 text-left font-medium">Status</th>
+          <th class="px-4 py-3 text-left font-medium">Created</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800">
+        <% @tasks.each do |task| %>
+          <tr class="hover:bg-gray-800/40">
+            <td class="px-4 py-3"><%= link_to task["id"], security_task_path(task["id"]), class: "font-mono text-sky-300" %></td>
+            <td class="px-4 py-3 text-gray-300 font-mono"><%= task["session_id"] %></td>
+            <td class="px-4 py-3 text-gray-300 font-mono"><%= task["campaign"].presence || "-" %></td>
+            <td class="px-4 py-3 text-white"><%= task["task_type"] %></td>
+            <td class="px-4 py-3"><span class="text-xs px-2 py-1 rounded-full <%= ursa_status_classes(task["status"]) %>"><%= task["status"] %></span></td>
+            <td class="px-4 py-3 text-gray-400"><%= ursa_time_ago(task["created_at"]) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
