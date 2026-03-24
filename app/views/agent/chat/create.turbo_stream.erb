@@ -1,0 +1,7 @@
+<%= turbo_stream.remove "chat-empty" %>
+<%= turbo_stream.append "chat-messages" do %>
+  <%= render "message", msg: @user_message %>
+<% end %>
+<%= turbo_stream.append "chat-messages" do %>
+  <%= render "message", msg: @agent_message %>
+<% end %>

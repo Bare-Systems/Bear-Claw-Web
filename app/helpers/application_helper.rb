@@ -1,14 +1,28 @@
 module ApplicationHelper
+  include ActionView::Helpers::DateHelper
+
   def ursa_timestamp(timestamp)
     return "never" if timestamp.blank?
 
-    Time.zone.at(timestamp.to_f).strftime("%Y-%m-%d %H:%M:%S")
+    t = ursa_parse_time(timestamp)
+    t ? t.strftime("%Y-%m-%d %H:%M:%S") : timestamp.to_s
   end
 
   def ursa_time_ago(timestamp)
     return "never" if timestamp.blank?
 
-    distance_in_words_to_now(Time.zone.at(timestamp.to_f), include_seconds: true) + " ago"
+    t = ursa_parse_time(timestamp)
+    return timestamp.to_s unless t
+
+    distance_of_time_in_words_to_now(t, include_seconds: true) + " ago"
+  end
+
+  def ursa_parse_time(timestamp)
+    return nil if timestamp.blank?
+
+    timestamp.is_a?(Numeric) ? Time.zone.at(timestamp) : Time.zone.parse(timestamp.to_s)
+  rescue ArgumentError, TypeError
+    nil
   end
 
   def ursa_filesize(size)
@@ -49,5 +63,13 @@ module ApplicationHelper
     JSON.parse(value)
   rescue JSON::ParserError
     {}
+  end
+
+  def bearclaw_chat_widget_enabled?
+    current_user&.can_access?(:agent)
+  end
+
+  def bearclaw_chat_widget_embedded?
+    controller_path == "agent/chat" && action_name == "index"
   end
 end

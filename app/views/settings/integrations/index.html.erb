@@ -1,0 +1,198 @@
+<% content_for :title, "Integrations — BearClaw" %>
+
+<div
+  class="max-w-5xl mx-auto"
+  data-controller="integration-panel"
+  data-integration-panel-open-class="translate-x-0"
+  data-integration-panel-closed-class="translate-x-full"
+  data-action="keydown.escape@document->integration-panel#closeOnEscape"
+>
+
+  <%# ── Page header ─────────────────────────────────────────────────────────── %>
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-xl font-semibold text-white">Integrations</h1>
+      <p class="mt-1 text-sm text-gray-500">Connect third-party services to sync devices and sensor data into BearClaw.</p>
+    </div>
+  </div>
+
+  <%# ── Provider cards ──────────────────────────────────────────────────────── %>
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <% @providers.each do |provider| %>
+      <% integration = @integrations[provider[:key]] %>
+      <% connected   = provider[:managed_by].present? ? (provider[:key] == "airthings" && @polar_online) : integration&.connected? %>
+      <% managed     = provider[:managed_by].present? %>
+
+      <article class="relative rounded-xl border <%= connected ? 'border-gray-700 bg-gray-900/70' : 'border-gray-800 bg-gray-900/40' %> p-5 flex flex-col gap-4">
+
+        <%# Logo + name row %>
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <%# Brand badge %>
+            <span class="flex h-10 w-10 items-center justify-center rounded-lg text-base font-bold shrink-0"
+                  style="background-color: <%= provider[:brand_color] %>; color: <%= provider[:brand_text] %>">
+              <%= provider[:logo_letter] %>
+            </span>
+            <div>
+              <p class="text-sm font-semibold text-white"><%= provider[:name] %></p>
+              <p class="text-xs text-gray-500"><%= provider[:category] %></p>
+            </div>
+          </div>
+
+          <%# Status badge %>
+          <% if connected %>
+            <span class="mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium bg-emerald-950/70 text-emerald-400 border border-emerald-800/60">
+              <%= managed ? "Via #{provider[:managed_by]}" : "Connected" %>
+            </span>
+          <% else %>
+            <span class="mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium bg-gray-800 text-gray-500 border border-gray-700">
+              Not connected
+            </span>
+          <% end %>
+        </div>
+
+        <%# Description %>
+        <p class="text-xs text-gray-400 leading-relaxed"><%= provider[:tagline] %></p>
+
+        <%# Error message if any %>
+        <% if integration&.last_error.present? %>
+          <p class="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-xs text-red-300">
+            <%= integration.last_error.truncate(120) %>
+          </p>
+        <% end %>
+
+        <%# Last verified %>
+        <% if integration&.last_verified_at.present? %>
+          <p class="text-xs text-gray-600">Last synced <%= integration.last_verified_at.strftime("%-I:%M %p") %></p>
+        <% end %>
+
+        <%# Actions %>
+        <div class="mt-auto flex items-center gap-2">
+          <% if managed %>
+            <%# Polar-managed — show docs link only, no connect form %>
+            <% if provider[:docs_url].present? %>
+              <%= link_to "View docs", provider[:docs_url], target: "_blank",
+                    class: "text-xs text-gray-500 hover:text-gray-300 transition" %>
+            <% end %>
+          <% elsif connected && integration %>
+            <button type="button"
+                    class="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-700 transition"
+                    data-action="integration-panel#open"
+                    data-integration-panel-key-param="<%= provider[:key] %>"
+                    data-integration-panel-id-param="<%= integration.id %>">
+              Configure
+            </button>
+            <%= button_to "Disconnect",
+                  settings_integration_path(integration),
+                  method: :delete,
+                  data: { turbo_confirm: "Disconnect #{provider[:name]}? Synced devices will be removed." },
+                  class: "rounded-lg border border-red-900/60 bg-red-950/30 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-950/50 transition" %>
+          <% else %>
+            <button type="button"
+                    class="rounded-lg border border-indigo-700/60 bg-indigo-900/30 px-3 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-900/50 transition"
+                    data-action="integration-panel#open"
+                    data-integration-panel-key-param="<%= provider[:key] %>">
+              Connect
+            </button>
+            <% if provider[:docs_url].present? %>
+              <%= link_to "Get API key →", provider[:docs_url], target: "_blank",
+                    class: "text-xs text-gray-600 hover:text-gray-400 transition" %>
+            <% end %>
+          <% end %>
+        </div>
+      </article>
+    <% end %>
+  </div>
+
+  <%# ── Slide-over credential panel ─────────────────────────────────────────── %>
+  <%# Backdrop %>
+  <div
+    class="fixed inset-0 bg-black/60 z-40 hidden"
+    data-integration-panel-target="backdrop"
+    data-action="click->integration-panel#close"
+  ></div>
+
+  <%# Panel %>
+  <div
+    class="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-gray-900 border-l border-gray-800 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+    data-integration-panel-target="panel"
+  >
+    <%# Panel header %>
+    <div class="flex items-center justify-between border-b border-gray-800 px-5 py-4 shrink-0">
+      <div class="flex items-center gap-3">
+        <span
+          class="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold"
+          data-integration-panel-target="logobadge"
+          style="background-color: #6B7280; color: #f9fafb"
+        >?</span>
+        <h2 class="text-sm font-semibold text-white" data-integration-panel-target="title">Connect</h2>
+      </div>
+      <button type="button" class="text-gray-500 hover:text-gray-300 transition" data-action="integration-panel#close">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <%# Panel body — dynamically populated by Stimulus %>
+    <div class="flex-1 overflow-y-auto px-5 py-6" data-integration-panel-target="body">
+    </div>
+
+    <%# Hidden form templates — one per provider that has user-entered credentials %>
+    <% Home::ProviderRegistry.user_configurable.each do |provider| %>
+      <template data-provider-key="<%= provider[:key] %>">
+        <p class="mb-5 text-xs text-gray-400 leading-relaxed"><%= provider[:tagline] %></p>
+
+        <% if provider[:docs_url].present? %>
+          <p class="mb-5">
+            <%= link_to "Get credentials at #{URI.parse(provider[:docs_url]).host} →",
+                  provider[:docs_url], target: "_blank",
+                  class: "text-xs text-indigo-400 hover:text-indigo-300 transition" %>
+          </p>
+        <% end %>
+
+        <%# create form %>
+        <%= form_with url: settings_integrations_path, method: :post,
+              data: { "integration-panel-target": "createForm", provider_key: provider[:key] } do |f| %>
+          <%= hidden_field_tag :provider_key, provider[:key] %>
+          <% provider[:credential_fields].each do |field| %>
+            <div class="mb-4">
+              <label class="block text-xs font-medium text-gray-300 mb-1.5"><%= field[:label] %></label>
+              <%= text_field_tag field[:key], nil,
+                    type: field[:type],
+                    autocomplete: field[:type] == "password" ? "new-password" : "off",
+                    class: "w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600" %>
+              <% if field[:hint].present? %>
+                <p class="mt-1.5 text-xs text-gray-500"><%= field[:hint] %></p>
+              <% end %>
+            </div>
+          <% end %>
+          <button type="submit"
+                  class="mt-2 w-full rounded-lg bg-indigo-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-600 transition">
+            Connect <%= provider[:name] %>
+          </button>
+        <% end %>
+
+        <%# update form (hidden until Stimulus swaps integration id in) %>
+        <%= form_with url: settings_integration_path(0), method: :patch,
+              data: { "integration-panel-target": "updateForm", provider_key: provider[:key] } do |f| %>
+          <% provider[:credential_fields].each do |field| %>
+            <div class="mb-4">
+              <label class="block text-xs font-medium text-gray-300 mb-1.5"><%= field[:label] %></label>
+              <%= text_field_tag field[:key], nil,
+                    type: field[:type],
+                    autocomplete: field[:type] == "password" ? "new-password" : "off",
+                    placeholder: field[:type] == "password" ? "Leave blank to keep existing" : nil,
+                    class: "w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600" %>
+              <% if field[:hint].present? %>
+                <p class="mt-1.5 text-xs text-gray-500"><%= field[:hint] %></p>
+              <% end %>
+            </div>
+          <% end %>
+          <button type="submit"
+                  class="mt-2 w-full rounded-lg bg-indigo-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-600 transition">
+            Update <%= provider[:name] %>
+          </button>
+        <% end %>
+      </template>
+    <% end %>
+  </div>
+</div>

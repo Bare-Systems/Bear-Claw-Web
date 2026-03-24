@@ -1,0 +1,33 @@
+<% role    = msg[:role]
+   content = msg[:content]
+   msg_id  = msg[:id] %>
+
+<div id="message-<%= msg_id %>"
+     class="flex <%= role == "user" ? "justify-end" : "justify-start" %>">
+
+  <% if role == "user" %>
+    <div class="max-w-[85%] rounded-[1.25rem] rounded-br-md bg-emerald-400 px-4 py-2.5
+                text-sm leading-relaxed text-gray-950 whitespace-pre-wrap break-words shadow-[0_12px_30px_rgba(74,222,128,0.2)]">
+      <%= content %>
+    </div>
+
+  <% elsif role == "error" %>
+    <div class="max-w-[85%] flex items-start gap-2">
+      <span class="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 text-[0.65rem] font-semibold tracking-[0.22em] text-red-300">!</span>
+      <div class="rounded-[1.25rem] rounded-tl-md border border-red-900/80 bg-red-950/70 px-4 py-2.5
+                  text-sm leading-relaxed text-red-200 whitespace-pre-wrap break-words">
+        <%= content %>
+      </div>
+    </div>
+
+  <% else %>
+    <div class="max-w-[85%] flex items-start gap-2">
+      <span class="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-400/10 text-[0.6rem] font-semibold tracking-[0.24em] text-emerald-200">BC</span>
+      <div class="rounded-[1.25rem] rounded-tl-md border border-white/10 bg-white/[0.03] px-4 py-2.5
+                  text-sm leading-relaxed text-gray-100 whitespace-pre-wrap break-words">
+        <%= content %>
+      </div>
+    </div>
+  <% end %>
+
+</div>

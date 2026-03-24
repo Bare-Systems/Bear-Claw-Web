@@ -1,15 +1,15 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  email: MyString
-  name: MyString
-  avatar_url: MyString
-  google_uid: MyString
+  email: one@example.com
+  name: One User
+  avatar_url: https://example.com/one.png
+  google_uid: google-uid-one
   role: 1
 
 two:
-  email: MyString
-  name: MyString
-  avatar_url: MyString
-  google_uid: MyString
+  email: two@example.com
+  name: Two User
+  avatar_url: https://example.com/two.png
+  google_uid: google-uid-two
   role: 1

@@ -31,7 +31,8 @@ module Security
 
     def handle_ursa_error(error)
       if request.get?
-        redirect_to security_root_path, alert: error.message
+        @security_error_message = error.message
+        render "security/shared/unavailable", status: :service_unavailable
       else
         redirect_back_to security_root_path, alert: error.message
       end

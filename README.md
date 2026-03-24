@@ -1,24 +1,112 @@
-# README
+# BearClawWeb
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+Rails 8 application for Bare Systems operator workflows.
 
-Things you may want to cover:
+BearClawWeb is the only human-facing web UI. It renders the operator experience
+for:
+- BearClaw agent workflows
+- Koala home workflows
+- Ursa security workflows
 
-* Ruby version
+## Homelab Network Contract
 
-* System dependencies
+The working `blink` topology is:
 
-* Configuration
+- Public TLS entrypoint: Tardigrade on `https://bearclaw.baresystems.com`
+- Tardigrade upstream for BearClaw: `http://127.0.0.1:3001`
+- BearClaw container host: `192.168.86.53`
+- Koala API for Home pages: `http://192.168.86.53:8082`
+- Polar API for Home climate pages: `http://192.168.86.53:6702`
+- Ursa admin API for Security pages: `http://192.168.86.53:18080`
 
-* Database creation
+Do not change those boundaries casually:
 
-* Database initialization
+- BearClaw itself stays loopback-only on the host. Do not expose `3001` on the
+  LAN to make the site work.
+- BearClaw runs in Docker, so host services must be reached through the host IP.
+  Do not use `127.0.0.1` inside the BearClaw container for Koala or Ursa.
+- Koala is the special case on `blink`: the camera-facing orchestrator has to
+  run on host networking because Docker bridge containers could not reach the
+  DVR on `192.168.86.46` during the March 20, 2026 outage.
 
-* How to run the test suite
+## Service Boundaries
 
-* Services (job queues, cache servers, search engines, etc.)
+- `BearClawWeb` is the UI layer.
+- `Ursa major/server.py` is the C2 runtime for implants.
+- `Ursa major.web` is the BearClaw-facing admin API and experience facade over
+  the Ursa datastore.
+- `Koala` is the Home-camera API and snapshot service.
+- `Polar` is the Home climate and environmental telemetry API.
 
-* Deployment instructions
+BearClawWeb does not talk directly to the Ursa C2 listener for Security pages.
+It depends on the bearer-authenticated JSON API exposed by `major.web` under
+`/api/v1/*`.
 
-* ...
+## Configuration
+
+Required env vars for the Security module:
+- `URSA_URL`
+- `URSA_TOKEN`
+
+`URSA_TOKEN` must match `major.web.auth.api_token` in Ursa.
+
+When BearClawWeb runs in Docker on the homelab host, `URSA_URL` must point at
+the host-published Ursa admin API address, not the host loopback device from
+inside the container. The current homelab deployment expects:
+
+```env
+URSA_URL=http://192.168.86.53:18080
+```
+
+Home pages follow the same rule for Koala:
+
+```env
+KOALA_URL=http://192.168.86.53:8082
+```
+
+Polar-backed Home climate widgets follow the same rule:
+
+```env
+POLAR_URL=http://192.168.86.53:6702
+POLAR_TOKEN=<polar service token>
+```
+
+## Failure Behavior
+
+If Ursa is unavailable, Security pages should render a stable unavailable page.
+They must not redirect back to `/security` in a loop.
+
+If Koala is unavailable, the Home dashboard should degrade to unavailable camera
+tiles. It should not assume cameras are down until host-to-Koala reachability
+has been checked.
+
+## Deployment Validation
+
+The homelab Blink deploy for BearClaw is image-based:
+
+- Blink builds the production Docker image locally on the Mac host.
+- The local build runs inside a Docker builder container with the repo
+  bind-mounted into `/workspace`.
+- Blink uploads the saved image tarball artifact to `blink`.
+- The remote host only does `docker load` + `docker run`.
+- The remote host must not unpack the repo or run `docker build` for BearClaw.
+
+After a deploy on `blink`, the minimum network checks are:
+
+```bash
+curl -sS http://192.168.86.53:8082/healthz
+curl -sS http://192.168.86.53:18080/healthz
+docker exec bearclaw-web ruby -rnet/http -e 'print Net::HTTP.get_response(URI("http://192.168.86.53:8082/healthz")).code'
+docker exec bearclaw-web ruby -rnet/http -e 'print Net::HTTP.get_response(URI("http://192.168.86.53:18080/healthz")).code'
+```
+
+## Tests
+
+The test environment uses SQLite so request/controller tests do not depend on a
+local Postgres instance.
+
+Run the focused regression tests with:
+
+```bash
+bundle exec rails test test/controllers/security/dashboard_controller_test.rb test/integration/login_page_test.rb
+```

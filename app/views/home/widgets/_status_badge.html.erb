@@ -1,0 +1,28 @@
+<% capability = widget.device_capability %>
+<% state = capability&.state_hash || {} %>
+<% status = capability&.status_label || "unknown" %>
+
+<section id="widget-<%= widget.id %>" class="rounded-xl border border-gray-800 bg-gray-900/70 p-4">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <h4 class="text-sm font-semibold text-white"><%= widget.display_title %></h4>
+      <p class="mt-1 text-xs text-gray-500"><%= widget.device&.name || "Unassigned device" %></p>
+    </div>
+    <span class="rounded-full px-2 py-1 text-xs font-medium capitalize <%= ursa_status_classes(status) %>"><%= status %></span>
+  </div>
+
+  <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
+    <div>
+      <dt class="text-xs uppercase tracking-wide text-gray-500">Capability</dt>
+      <dd class="mt-1 text-gray-200"><%= capability&.capability_type&.humanize || "None" %></dd>
+    </div>
+    <div>
+      <dt class="text-xs uppercase tracking-wide text-gray-500">Source</dt>
+      <dd class="mt-1 text-gray-200"><%= state["selected_source"].presence || widget.device&.source_kind&.humanize || "Unknown" %></dd>
+    </div>
+  </dl>
+
+  <% if state["last_error"].present? %>
+    <p class="mt-4 rounded-lg border border-red-900/70 bg-red-950/40 px-3 py-2 text-sm text-red-200"><%= state["last_error"] %></p>
+  <% end %>
+</section>

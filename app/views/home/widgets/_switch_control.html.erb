@@ -1,0 +1,33 @@
+<% capability = widget.device_capability %>
+<% status = capability&.status_label || "unknown" %>
+<% state_label = capability.present? ? switch_state_label(capability) : "Unavailable" %>
+
+<section id="widget-<%= widget.id %>" class="rounded-xl border border-gray-800 bg-gray-900/70 p-4">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <h4 class="text-sm font-semibold text-white"><%= widget.display_title %></h4>
+      <p class="mt-1 text-xs text-gray-500"><%= widget.device&.name || "Unassigned device" %></p>
+    </div>
+    <span class="rounded-full px-2 py-1 text-xs font-medium capitalize <%= ursa_status_classes(status) %>"><%= status %></span>
+  </div>
+
+  <div class="mt-4 rounded-xl border border-gray-800 bg-gray-950/70 p-4">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <p class="text-xs uppercase tracking-wide text-gray-500">Current State</p>
+        <p class="mt-1 text-2xl font-semibold text-white"><%= state_label %></p>
+      </div>
+      <span class="rounded-full border border-gray-700 px-3 py-1 text-xs uppercase tracking-wide text-gray-300"><%= capability&.configuration_hash["control_mode"].presence || "manual" %></span>
+    </div>
+
+    <p class="mt-3 text-sm text-gray-500">
+      Manual switch capabilities can be toggled directly from the dashboard. Provider-backed switches can later replace this with real API actions.
+    </p>
+
+    <% if capability.present? %>
+      <%= button_to(capability.switch_on? ? "Turn Off" : "Turn On", toggle_home_device_capability_path(capability), method: :post, class: "mt-4 rounded-lg border border-sky-700/70 bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-200 transition hover:bg-sky-900/50") %>
+    <% else %>
+      <button type="button" disabled class="mt-4 rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-500">Toggle Unavailable</button>
+    <% end %>
+  </div>
+</section>

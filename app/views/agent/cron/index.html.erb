@@ -1,4 +1,98 @@
-<div class="max-w-4xl mx-auto">
-  <h1 class="text-2xl font-bold text-white mb-1">Cron Tasks</h1>
-  <p class="text-gray-500 text-sm">Coming soon — connect to the BearClaw agent service to populate this view.</p>
+<% content_for :title, "Cron Tasks — Agent — BearClaw" %>
+
+<div class="max-w-5xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white mb-1">Cron Tasks</h1>
+      <p class="text-gray-500 text-sm">Scheduled jobs run by the BearClaw agent.</p>
+    </div>
+  </div>
+
+  <%# ── Create form ──────────────────────────────────────────────────────── %>
+  <div class="rounded-xl border border-gray-800 bg-gray-900/60 p-5">
+    <h2 class="text-sm font-semibold text-white mb-4">New Cron Job</h2>
+    <%= form_with url: agent_cron_index_path, method: :post, class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3" do %>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Name</label>
+        <%= text_field_tag :name, nil, placeholder: "Health check", required: true,
+              class: "w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-sky-600 focus:outline-none" %>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Schedule <span class="text-gray-600">(cron expr)</span></label>
+        <%= text_field_tag :schedule, nil, placeholder: "*/5 * * * *", required: true,
+              class: "w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-white placeholder-gray-600 font-mono focus:border-sky-600 focus:outline-none" %>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-400 mb-1">Command</label>
+        <%= text_field_tag :command, nil, placeholder: "health_check", required: true,
+              class: "w-full rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 text-sm text-white placeholder-gray-600 font-mono focus:border-sky-600 focus:outline-none" %>
+      </div>
+      <div class="flex items-end">
+        <%= submit_tag "Add Job", class: "w-full rounded-lg bg-sky-700 hover:bg-sky-600 px-4 py-2 text-sm font-medium text-white transition cursor-pointer" %>
+      </div>
+    <% end %>
+  </div>
+
+  <%# ── Jobs table ───────────────────────────────────────────────────────── %>
+  <% if @jobs.any? %>
+    <div class="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium">Name</th>
+            <th class="px-4 py-3 text-left font-medium">Schedule</th>
+            <th class="px-4 py-3 text-left font-medium">Command</th>
+            <th class="px-4 py-3 text-left font-medium">Last Run</th>
+            <th class="px-4 py-3 text-left font-medium">Status</th>
+            <th class="px-4 py-3 text-left font-medium">Next Run</th>
+            <th class="px-4 py-3 text-left font-medium">Enabled</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          <% @jobs.each do |job| %>
+            <tr class="hover:bg-gray-800/30">
+              <td class="px-4 py-3 text-white font-medium"><%= job["name"] %></td>
+              <td class="px-4 py-3 font-mono text-xs text-sky-300"><%= job["schedule"] %></td>
+              <td class="px-4 py-3 font-mono text-xs text-gray-400"><%= job["command"] %></td>
+              <td class="px-4 py-3 text-gray-400 text-xs">
+                <%= job["last_run_at"].present? ? ursa_timestamp(job["last_run_at"]) : "—" %>
+              </td>
+              <td class="px-4 py-3">
+                <% last_status = job["last_status"].presence || "—" %>
+                <% status_class = case last_status
+                   when "ok"      then "bg-emerald-950 text-emerald-300 border-emerald-800/60"
+                   when "error"   then "bg-red-950 text-red-300 border-red-800/60"
+                   when "running" then "bg-sky-950 text-sky-300 border-sky-800/60"
+                   else                "bg-gray-800 text-gray-400 border-gray-700"
+                   end %>
+                <span class="rounded-full border px-2 py-0.5 text-xs font-medium <%= status_class %>"><%= last_status %></span>
+              </td>
+              <td class="px-4 py-3 text-gray-400 text-xs">
+                <%= job["next_run_at"].present? ? ursa_timestamp(job["next_run_at"]) : "—" %>
+              </td>
+              <td class="px-4 py-3">
+                <%= form_with url: agent_cron_path(job["id"]), method: :patch do %>
+                  <%= hidden_field_tag :enabled, job["enabled"] ? "0" : "1" %>
+                  <button type="submit" class="text-xs <%= job["enabled"] ? "text-emerald-400" : "text-gray-500" %> hover:underline cursor-pointer">
+                    <%= job["enabled"] ? "On" : "Off" %>
+                  </button>
+                <% end %>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <%= button_to "Delete", agent_cron_path(job["id"]), method: :delete,
+                      class: "text-xs text-red-400 hover:text-red-300 transition cursor-pointer",
+                      form: { data: { turbo_confirm: "Delete cron job \"#{job["name"]}\"?" } } %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <div class="rounded-xl border border-dashed border-gray-700 bg-gray-900/40 px-6 py-12 text-center">
+      <p class="text-sm font-medium text-gray-300">No cron jobs yet</p>
+      <p class="mt-1 text-sm text-gray-500">Add one above to schedule recurring agent tasks.</p>
+    </div>
+  <% end %>
 </div>

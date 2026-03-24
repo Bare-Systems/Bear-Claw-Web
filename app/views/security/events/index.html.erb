@@ -6,14 +6,14 @@
     <p class="text-gray-500 text-sm">Operational event log across sessions and campaigns.</p>
   </div>
 
-  <%= form_with url: security_events_index_path, method: :get, class: "grid grid-cols-1 md:grid-cols-5 gap-3 bg-gray-900 border border-gray-800 rounded-xl p-4" do %>
+  <%= form_with url: security_events_path, method: :get, class: "grid grid-cols-1 md:grid-cols-5 gap-3 bg-gray-900 border border-gray-800 rounded-xl p-4" do %>
     <%= select_tag :level, options_for_select([["All levels", ""], ["info", "info"], ["warning", "warning"], ["error", "error"]], @filters["level"]), class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
     <%= text_field_tag :session_id, @filters["session_id"], placeholder: "Session ID", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
     <%= text_field_tag :campaign, @filters["campaign"], placeholder: "Campaign", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
     <%= text_field_tag :tag, @filters["tag"], placeholder: "Tag", class: "bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white" %>
     <div class="flex gap-2">
       <%= submit_tag "Filter", class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer" %>
-      <%= link_to "Reset", security_events_index_path, class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-300 text-sm" %>
+      <%= link_to "Reset", security_events_path, class: "px-4 py-2 rounded-lg border border-gray-700 text-gray-300 text-sm" %>
     </div>
   <% end %>
 

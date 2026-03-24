@@ -1,0 +1,338 @@
+<div class="space-y-4">
+  <section class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
+    <h2 class="text-sm font-semibold text-white">Service Providers</h2>
+    <p class="mt-1 text-sm text-gray-500">Providers expose families of physical or network-backed services, like Koala or Polar.</p>
+
+    <%= form_with url: home_service_providers_path, method: :post, class: "mt-4 space-y-3" do |form| %>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <%= form.label :key, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+          <%= form.text_field :key, name: "service_provider[key]", placeholder: "polar", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        </div>
+        <div>
+          <%= form.label :name, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+          <%= form.text_field :name, name: "service_provider[name]", placeholder: "Polar", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        </div>
+      </div>
+      <div>
+        <%= form.label :provider_type, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+        <%= form.select :provider_type, options_for_select(provider_type_options), {}, name: "service_provider[provider_type]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+      <div>
+        <%= form.label :description, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+        <%= form.text_area :description, name: "service_provider[description]", rows: 2, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+      <%= form.submit "Create Provider", class: "w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400" %>
+    <% end %>
+
+    <div class="mt-4 space-y-3">
+      <% service_providers.each do |provider| %>
+        <%= form_with model: provider, url: home_service_provider_path(provider), method: :patch, class: "space-y-3 rounded-xl border border-gray-800 bg-gray-900/70 p-3" do |form| %>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-white"><%= provider.name %></p>
+              <p class="mt-1 text-xs text-gray-500"><%= provider_summary(provider) %></p>
+            </div>
+            <span class="rounded-full border border-gray-700 px-2 py-1 text-[11px] uppercase tracking-wide text-gray-300"><%= provider.key %></span>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <%= form.text_field :name, class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            <%= form.select :provider_type, options_for_select(provider_type_options, provider.provider_type), {}, class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          </div>
+          <%= form.text_area :description, rows: 2, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          <%= form.submit "Save Provider", class: "w-full rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-gray-800" %>
+        <% end %>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
+    <h2 class="text-sm font-semibold text-white">Connections</h2>
+    <p class="mt-1 text-sm text-gray-500">Concrete API or network connections that belong to a provider.</p>
+
+    <%= form_with url: home_service_connections_path, method: :post, class: "mt-4 space-y-3" do |form| %>
+      <div>
+        <%= form.label :service_provider_id, "Provider", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+        <%= form.select :service_provider_id, options_from_collection_for_select(service_providers, :id, :name), { prompt: "Choose a provider" }, name: "service_connection[service_provider_id]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <%= form.text_field :key, name: "service_connection[key]", placeholder: "polar-primary", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        <%= form.text_field :name, name: "service_connection[name]", placeholder: "Polar Primary", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <%= form.select :adapter, options_for_select(connection_adapter_options), {}, name: "service_connection[adapter]", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        <%= form.select :status, options_for_select(connection_status_options, "online"), {}, name: "service_connection[status]", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+      <%= form.text_field :base_url, name: "service_connection[base_url]", placeholder: "https://api.polar.example", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      <%= form.hidden_field :credential_strategy, name: "service_connection[credential_strategy]", value: "environment" %>
+      <%= form.submit "Create Connection", class: "w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400" %>
+    <% end %>
+
+    <div class="mt-4 space-y-3">
+      <% service_connections.each do |connection| %>
+        <%= form_with model: connection, url: home_service_connection_path(connection), method: :patch, class: "space-y-3 rounded-xl border border-gray-800 bg-gray-900/70 p-3" do |form| %>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-white"><%= connection.name %></p>
+              <p class="mt-1 text-xs text-gray-500"><%= connection.service_provider.name %> · <%= connection.adapter.humanize %></p>
+            </div>
+            <span class="rounded-full px-2 py-1 text-[11px] capitalize <%= ursa_status_classes(connection.status) %>"><%= connection.status %></span>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <%= form.text_field :name, class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            <%= form.select :status, options_for_select(connection_status_options, connection.status), {}, class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          </div>
+          <%= form.text_field :base_url, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          <%= form.submit "Save Connection", class: "w-full rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-gray-800" %>
+        <% end %>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
+    <h2 class="text-sm font-semibold text-white">Devices and Capabilities</h2>
+    <p class="mt-1 text-sm text-gray-500">Define physical or network devices, then attach capabilities that widgets can consume.</p>
+
+    <%= form_with url: home_devices_path, method: :post, class: "mt-4 space-y-3" do |form| %>
+      <div>
+        <%= form.label :service_connection_id, "Connection", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+        <%= form.select :service_connection_id, options_from_collection_for_select(service_connections, :id, :name), { prompt: "Choose a connection" }, name: "device[service_connection_id]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <%= form.text_field :key, name: "device[key]", placeholder: "office-air-sensor", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        <%= form.text_field :name, name: "device[name]", placeholder: "Office Air Sensor", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <%= form.select :category, options_for_select(device_category_options), {}, name: "device[category]", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        <%= form.select :source_kind, options_for_select(device_source_kind_options), {}, name: "device[source_kind]", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <%= form.text_field :source_identifier, name: "device[source_identifier]", placeholder: "sensor-01", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        <%= form.select :status, options_for_select(device_status_options, "available"), {}, name: "device[status]", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <%= form.text_field :location, name: "device[location]", placeholder: "Office", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        <%= form.text_field :notes, name: "device[notes]", placeholder: "Wall-mounted", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+      <%= form.submit "Create Device", class: "w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400" %>
+    <% end %>
+
+    <div class="mt-4 space-y-4">
+      <% devices.each do |device| %>
+        <div class="rounded-xl border border-gray-800 bg-gray-900/70 p-3">
+          <div class="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-white"><%= device.name %></p>
+              <p class="mt-1 text-xs text-gray-500"><%= device.source_label %> · <%= device.category.humanize %> · <%= device_location(device) %></p>
+            </div>
+            <span class="rounded-full px-2 py-1 text-[11px] capitalize <%= ursa_status_classes(device.status) %>"><%= device.status %></span>
+          </div>
+
+          <%= form_with model: device, url: home_device_path(device), method: :patch, class: "space-y-3" do |form| %>
+            <div class="grid grid-cols-2 gap-3">
+              <%= form.text_field :name, class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+              <%= form.select :status, options_for_select(device_status_options, device.status), {}, class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <%= form.text_field :location, name: "device[location]", value: device.metadata_hash["location"], placeholder: "Location", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+              <%= form.text_field :notes, name: "device[notes]", value: device.metadata_hash["notes"], placeholder: "Notes", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            </div>
+            <%= form.submit "Save Device", class: "w-full rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-gray-800" %>
+          <% end %>
+
+          <div class="mt-4 space-y-3 border-t border-gray-800 pt-4">
+            <% device.device_capabilities.order(:name).each do |capability| %>
+              <%= form_with model: capability, url: home_device_capability_path(capability), method: :patch, class: "space-y-3 rounded-xl border border-gray-800 bg-gray-950/70 p-3" do |form| %>
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-white"><%= capability.name %></p>
+                    <p class="mt-1 text-xs text-gray-500"><%= capability.capability_type.humanize %> · key: <%= capability.key %></p>
+                  </div>
+                  <span class="rounded-full px-2 py-1 text-[11px] capitalize <%= ursa_status_classes(capability.status_label) %>"><%= capability.status_label %></span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <%= form.text_field :name, class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                  <%= form.select :capability_type, options_for_select(capability_type_options, capability.capability_type), {}, class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <%= form.text_field :value, name: "device_capability[value]", value: capability.current_value, placeholder: capability.capability_type == "switch" ? "true / false" : "Value", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                  <%= form.text_field :unit, name: "device_capability[unit]", value: capability.unit, placeholder: "ppm / F / %", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <%= form.text_field :camera_id, name: "device_capability[camera_id]", value: capability.configuration_hash["camera_id"], placeholder: "cam_1", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                  <%= form.text_field :selected_source, name: "device_capability[selected_source]", value: capability.configuration_hash["selected_source"] || capability.state_hash["selected_source"], placeholder: "rtsp / api / manual", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <%= form.select :status_override, options_for_select(device_status_options, capability.status_label), {}, name: "device_capability[status_override]", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                  <%= form.text_field :last_seen_at, name: "device_capability[last_seen_at]", value: capability.state_hash["last_seen_at"], placeholder: Time.current.iso8601, class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                </div>
+
+                <%= form.submit "Save Capability", class: "w-full rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-gray-800" %>
+              <% end %>
+            <% end %>
+
+            <%= form_with url: home_device_capabilities_path, method: :post, class: "space-y-3 rounded-xl border border-dashed border-gray-700 bg-gray-950/40 p-3" do |form| %>
+              <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Add Capability</p>
+              <%= form.hidden_field :device_id, name: "device_capability[device_id]", value: device.id %>
+              <div class="grid grid-cols-2 gap-3">
+                <%= form.text_field :key, name: "device_capability[key]", placeholder: "main_switch", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                <%= form.text_field :name, name: "device_capability[name]", placeholder: "Main Switch", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <%= form.select :capability_type, options_for_select(capability_type_options), {}, name: "device_capability[capability_type]", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                <%= form.select :status_override, options_for_select(device_status_options, "available"), {}, name: "device_capability[status_override]", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <%= form.text_field :value, name: "device_capability[value]", placeholder: "true / 72 / good", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                <%= form.text_field :unit, name: "device_capability[unit]", placeholder: "on/off / ppm / F", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <%= form.text_field :camera_id, name: "device_capability[camera_id]", placeholder: "cam_1", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                <%= form.text_field :selected_source, name: "device_capability[selected_source]", placeholder: "manual / rtsp / api", class: "rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+              </div>
+              <%= form.submit "Create Capability", class: "w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400" %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
+    <h2 class="text-sm font-semibold text-white">Add Tile</h2>
+    <p class="mt-1 text-sm text-gray-500">Create a new layout block. Widgets can be attached after the tile exists.</p>
+
+    <%= form_with url: home_dashboard_tiles_path, method: :post, class: "mt-4 space-y-3" do |form| %>
+      <div>
+        <%= form.label :title, "Title", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+        <%= form.text_field :title, name: "dashboard_tile[title]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <%= form.label :row, "Row", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+          <%= form.number_field :row, name: "dashboard_tile[row]", min: 1, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        </div>
+        <div>
+          <%= form.label :column, "Column", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+          <%= form.number_field :column, name: "dashboard_tile[column]", min: 1, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <%= form.label :width, "Width", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+          <%= form.number_field :width, name: "dashboard_tile[width]", min: 1, max: 4, value: 1, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        </div>
+        <div>
+          <%= form.label :height, "Height", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+          <%= form.number_field :height, name: "dashboard_tile[height]", min: 1, max: 3, value: 1, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        </div>
+      </div>
+
+      <%= form.submit "Create Tile", class: "w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400" %>
+    <% end %>
+  </section>
+
+  <section class="space-y-4">
+    <% dashboard.dashboard_tiles.each do |tile| %>
+      <div class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
+        <div class="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-semibold text-white"><%= tile.display_title %></h3>
+            <p class="mt-1 text-xs text-gray-500">Tile <%= tile.id %> · <%= pluralize(tile.dashboard_widgets.size, "widget") %></p>
+          </div>
+          <%= button_to "Delete", home_dashboard_tile_path(tile), method: :delete, class: "rounded-lg border border-red-800/70 px-3 py-1 text-xs text-red-200 hover:bg-red-950/60", form_class: "inline", data: { turbo_confirm: "Delete \"#{tile.display_title}\" and all its widgets?" } %>
+        </div>
+
+        <%= form_with model: tile, url: home_dashboard_tile_path(tile), method: :patch, class: "space-y-3" do |form| %>
+          <div>
+            <%= form.label :title, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+            <%= form.text_field :title, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <%= form.label :row, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+              <%= form.number_field :row, min: 1, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            </div>
+            <div>
+              <%= form.label :column, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+              <%= form.number_field :column, min: 1, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <%= form.label :width, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+              <%= form.number_field :width, min: 1, max: 4, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            </div>
+            <div>
+              <%= form.label :height, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+              <%= form.number_field :height, min: 1, max: 3, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            </div>
+          </div>
+          <%= form.submit "Save Tile", class: "w-full rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-gray-800" %>
+        <% end %>
+
+        <div class="mt-4 space-y-3 border-t border-gray-800 pt-4">
+          <% tile.dashboard_widgets.each do |widget| %>
+            <%= form_with model: widget, url: home_dashboard_widget_path(widget), method: :patch, class: "space-y-3 rounded-xl border border-gray-800 bg-gray-900/70 p-3" do |form| %>
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-xs font-medium uppercase tracking-wide text-gray-500"><%= widget.widget_type.humanize %></p>
+                <%= link_to "Remove", home_dashboard_widget_path(widget), data: { turbo_method: :delete, turbo_confirm: "Remove this #{widget.widget_type.humanize} widget?" }, class: "rounded-lg border border-red-800/70 px-2 py-1 text-[11px] text-red-200 hover:bg-red-950/60" %>
+              </div>
+
+              <div>
+                <%= form.label :title, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+                <%= form.text_field :title, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+              </div>
+
+              <div>
+                <%= form.label :position, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+                <%= form.number_field :position, min: 1, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+              </div>
+
+              <% if widget.widget_type == "camera_feed" %>
+                <div>
+                  <%= form.label :refresh_interval_seconds, "Refresh Interval (s)", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+                  <%= form.number_field :refresh_interval_seconds, name: "dashboard_widget[refresh_interval_seconds]", value: widget.refresh_interval_seconds, min: 2, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+                </div>
+              <% end %>
+
+              <%= form.submit "Save Widget", class: "w-full rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-gray-800" %>
+            <% end %>
+          <% end %>
+
+          <%= form_with url: home_dashboard_tile_dashboard_widgets_path(tile), method: :post, class: "space-y-3 rounded-xl border border-dashed border-gray-700 bg-gray-900/40 p-3" do |form| %>
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Add Widget</p>
+
+            <div>
+              <%= form.label :device_capability_id, "Capability", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+              <%= form.select :device_capability_id, options_for_select(available_capabilities.map { |capability| [dashboard_capability_label(capability), capability.id] }), { prompt: "Choose a capability" }, name: "dashboard_widget[device_capability_id]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            </div>
+
+            <div>
+              <%= form.label :widget_type, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+              <%= form.select :widget_type, options_for_select(dashboard_widget_type_options), { prompt: "Use capability default" }, name: "dashboard_widget[widget_type]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            </div>
+
+            <div>
+              <%= form.label :title, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+              <%= form.text_field :title, name: "dashboard_widget[title]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            </div>
+
+            <div>
+              <%= form.label :refresh_interval_seconds, "Refresh Interval (s)", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+              <%= form.number_field :refresh_interval_seconds, name: "dashboard_widget[refresh_interval_seconds]", min: 2, value: 4, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            </div>
+
+            <%= form.submit "Add Widget", class: "w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400" %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </section>
+</div>

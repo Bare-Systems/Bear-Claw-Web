@@ -108,8 +108,9 @@ class UrsaClient
     base = URI.parse(@base_url)
     uri = base.dup
     normalized_path = path.to_s.start_with?("/") ? path.to_s : "/#{path}"
-    uri.path = [ base.path.to_s.sub(%r{/\z}, ""), normalized_path.sub(%r{\A/}, "") ].reject(&:blank?).join("/")
-    uri.path = "/#{uri.path}" unless uri.path.start_with?("/")
+    resolved_path = [ base.path.to_s.sub(%r{/\z}, ""), normalized_path.sub(%r{\A/}, "") ].reject(&:blank?).join("/")
+    resolved_path = "/#{resolved_path}" unless resolved_path.start_with?("/")
+    uri.path = resolved_path
     uri.query = params.compact_blank.to_query.presence
     uri
   end

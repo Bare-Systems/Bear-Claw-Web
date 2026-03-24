@@ -6,6 +6,8 @@ Rails.application.routes.draw do
   post "/logout",                   to: "sessions#destroy", as: :logout
   get  "/auth/:provider/callback",  to: "sessions#create"
   get  "/auth/failure",             to: "sessions#failure"
+  get  "/invites/:token/accept",    to: "sessions#accept_invite", as: :accept_invite
+  get  "/dev/login",                to: "sessions#dev_login", as: :dev_login if Rails.env.development?
 
   # Agent module — BearClaw chat, cron, memory
   namespace :agent do
@@ -72,16 +74,39 @@ Rails.application.routes.draw do
   # Home module — Koala monitoring
   namespace :home do
     get "/",       to: "dashboard#index", as: :root
-    resources :cameras,  only: [ :index, :show ]
+    resources :service_providers, only: [ :create, :update ]
+    resources :service_connections, only: [ :create, :update ]
+    resources :devices, only: [ :create, :update ]
+    resources :device_capabilities, only: [ :create, :update ] do
+      member do
+        post :toggle
+      end
+    end
+    resources :dashboard_tiles, path: "dashboard/tiles", only: [ :create, :update, :destroy ] do
+      resources :dashboard_widgets, path: "widgets", only: [ :create ]
+    end
+    resources :dashboard_widgets, path: "dashboard/widgets", only: [ :update, :destroy ]
+    resources :cameras,  only: [ :index, :show ] do
+      member do
+        get :snapshot
+      end
+    end
     resources :zones,    only: [ :index, :show ]
     resources :packages, only: [ :index ]
     resources :firmware, only: [ :index ]
+  end
+
+  # Settings module — operator+ accessible, provider/integration management
+  namespace :settings do
+    get "/", to: "integrations#index", as: :root
+    resources :integrations, only: [ :index, :create, :update, :destroy ]
   end
 
   # Admin module
   namespace :admin do
     get "/",       to: "dashboard#index", as: :root
     resources :users
+    resources :invites, only: [:index, :create, :destroy]
     get :settings, to: "settings#index"
     get :audit,    to: "audit#index"
   end

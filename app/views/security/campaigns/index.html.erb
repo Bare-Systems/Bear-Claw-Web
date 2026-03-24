@@ -21,13 +21,14 @@
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-800">
-        <% @campaigns.each do |name, counts| %>
+        <% @campaigns.each do |campaign| %>
+          <% cname = campaign.is_a?(Hash) ? campaign["name"] : campaign %>
           <tr class="hover:bg-gray-800/40">
-            <td class="px-4 py-3"><%= link_to name, security_campaign_path(name), class: "font-mono text-sky-300" %></td>
-            <td class="px-4 py-3 text-white"><%= counts["sessions"] %></td>
-            <td class="px-4 py-3 text-white"><%= counts["tasks"] %></td>
-            <td class="px-4 py-3 text-white"><%= counts["events"] %></td>
-            <td class="px-4 py-3 text-amber-300"><%= counts["approvals"] %></td>
+            <td class="px-4 py-3"><%= link_to cname, security_campaign_path(cname), class: "font-mono text-sky-300" %></td>
+            <td class="px-4 py-3 text-white"><%= Array(campaign["sessions"]).length %></td>
+            <td class="px-4 py-3 text-white"><%= Array(campaign["tasks"]).length %></td>
+            <td class="px-4 py-3 text-white"><%= Array(campaign["events"]).length %></td>
+            <td class="px-4 py-3 text-amber-300"><%= campaign["approvals"] || 0 %></td>
           </tr>
         <% end %>
       </tbody>

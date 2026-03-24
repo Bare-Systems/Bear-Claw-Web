@@ -1,0 +1,48 @@
+<% capability = widget.device_capability %>
+<% state = capability&.state_hash || {} %>
+<% camera_id = capability&.camera_id %>
+<% status = capability&.status_label || "unknown" %>
+
+<section
+  id="widget-<%= widget.id %>"
+  class="group relative overflow-hidden rounded-b-2xl -mx-4 -mb-4 -mt-4 bg-gray-950"
+  style="min-height: 10rem; flex: 1;"
+  data-controller="camera-feed"
+  data-camera-feed-url-value="<%= camera_id.present? ? snapshot_home_camera_path(camera_id) : "" %>"
+  data-camera-feed-interval-value="<%= widget.refresh_interval_seconds * 1000 %>"
+>
+  <%# Full-bleed feed image %>
+  <img
+    alt="<%= widget.display_title %> live feed"
+    class="hidden h-full w-full object-cover"
+    data-action="load->camera-feed#loaded error->camera-feed#failed"
+    data-camera-feed-target="image"
+  >
+
+  <%# No-signal placeholder %>
+  <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center" data-camera-feed-target="placeholder">
+    <span class="rounded-full border border-gray-700 px-2 py-1 text-xs uppercase tracking-wide text-gray-400">No Signal</span>
+    <p class="text-sm text-gray-500"><%= state["last_error"].presence || "Waiting for a fresh Koala snapshot." %></p>
+  </div>
+
+  <%# Minimal name label — always visible, bottom-left %>
+  <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-2 pt-6">
+    <p class="text-xs font-medium text-white/90"><%= widget.display_title %></p>
+  </div>
+
+  <%# Hover overlay — metadata %>
+  <div class="absolute inset-0 flex flex-col justify-between bg-black/60 p-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+    <div class="flex items-start justify-between gap-2">
+      <p class="text-xs font-semibold text-white"><%= widget.display_title %></p>
+      <span class="rounded-full px-2 py-0.5 text-[10px] font-medium capitalize <%= ursa_status_classes(status) %>"><%= status %></span>
+    </div>
+    <div class="space-y-0.5 text-[11px] text-white/60">
+      <% if camera_id.present? %>
+        <p><%= camera_id %></p>
+      <% end %>
+      <% if state["last_probed_at"].present? %>
+        <p><%= ursa_timestamp(state["last_probed_at"]) %></p>
+      <% end %>
+    </div>
+  </div>
+</section>

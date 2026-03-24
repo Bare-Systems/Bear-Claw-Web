@@ -1,0 +1,47 @@
+<% cap       = widget.device_capability %>
+<% presenter = Home::MetricPresenter.new(cap) %>
+
+<section id="widget-<%= widget.id %>" class="rounded-xl border border-gray-800 bg-gray-900/70 p-4">
+
+  <%# ── Header: icon · name · scope · quality badge ──────────────────────── %>
+  <div class="flex items-start justify-between gap-2">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <span class="flex-shrink-0 text-xl leading-none" aria-hidden="true"><%= presenter.icon %></span>
+      <div class="min-w-0">
+        <h4 class="text-sm font-semibold text-white truncate"><%= presenter.label %></h4>
+        <% if presenter.scope_label %>
+          <p class="text-xs text-gray-500"><%= presenter.scope_label %></p>
+        <% end %>
+      </div>
+    </div>
+    <span class="flex-shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium <%= presenter.quality_badge_class %>">
+      <%= presenter.threshold_label %>
+    </span>
+  </div>
+
+  <%# ── Primary reading ───────────────────────────────────────────────────── %>
+  <div class="mt-5">
+    <p class="text-4xl font-bold leading-none tracking-tight <%= presenter.value_color_class %>">
+      <%= presenter.display_value %>
+    </p>
+    <p class="mt-1.5 text-sm text-gray-500">
+      <%= presenter.unit.presence || "No reading yet" %>
+    </p>
+  </div>
+
+  <%# ── Gauge bar (shown when a numeric scale exists for this metric) ──────── %>
+  <% if (pct = presenter.gauge_pct) %>
+    <div class="mt-4 h-1 overflow-hidden rounded-full bg-gray-800">
+      <div class="h-full rounded-full transition-all duration-700 <%= presenter.gauge_fill_class %>"
+           style="width: <%= pct %>%">
+      </div>
+    </div>
+  <% end %>
+
+  <%# ── Footer: device name · timestamp ───────────────────────────────────── %>
+  <div class="mt-3 flex items-center justify-between gap-3">
+    <p class="min-w-0 truncate text-xs text-gray-600"><%= widget.device&.name || "Unassigned device" %></p>
+    <p class="flex-shrink-0 text-xs text-gray-600"><%= presenter.formatted_timestamp %></p>
+  </div>
+
+</section>

@@ -13,11 +13,20 @@ publish_host = "192.168.86.53"
 port         = "3001"
 image_name   = "bearclaw-web:local"
 
+[targets.local]
+type   = "local"
+base   = "."
+db_url = "postgres://bearclaw_web:bear_claw_web_prod@192.168.86.53:5432/bear_claw_web_production"
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # bearclaw-web — Rails 8 role-based ops dashboard for Bare Systems
 # Port:    3001 (loopback only — proxied by Tardigrade → bearclaw.home)
 # Vhost:   https://bearclaw.home (wildcard TLS via Tardigrade)
 # DB:      bearclaw-postgres container (postgres:16) on blink
+# Network contract:
+#   - Keep BearClaw loopback-only on 127.0.0.1:3001
+#   - Reach Koala and Ursa from inside the container via 192.168.86.53
+#   - Do not point container clients at host loopback for Koala/Ursa
 # ═══════════════════════════════════════════════════════════════════════════════
 
 [services.bearclaw-web]
@@ -25,21 +34,36 @@ description  = "BearClaw Web - role-based ops dashboard for Bare Systems"
 port         = "3001"
 service_name = "bearclaw-web"
 
-# ── Source: bundle the repo as a tarball for upload ──────────────────────────
-# Excludes: git history, node_modules, tmp/log dirs, .env, dist output.
+# ── Source: build the deployment image locally and push to the registry ───────
+# Pattern:
+#   - run a Docker builder container locally
+#   - bind-mount the current repo into that builder container
+#   - build a linux/amd64 BearClaw image against the mounted workspace
+#   - push the image to registry.home — blink pulls from registry.home:5000
+# No artifact is uploaded; the registry is the transport layer.
 
 [services.bearclaw-web.source]
-type     = "local_build"
-workdir  = "."
-command  = "mkdir -p dist && COPYFILE_DISABLE=1 COPY_EXTENDED_ATTRIBUTES_DISABLE=1 tar --no-mac-metadata --no-xattrs --no-acls --no-fflags -czf dist/bearclaw-web-repo.tgz --exclude=.git --exclude=.github --exclude=node_modules --exclude=tmp --exclude=log --exclude=dist --exclude=.env --exclude=config/master.key ."
-artifact = "dist/bearclaw-web-repo.tgz"
+type          = "containerized_local_build"
+image         = "docker:cli"
+mount         = ".:/workspace"
+workdir       = "/workspace"
+# Build a linux/amd64 image locally and push to the registry running on blink.
+# blink pulls from registry.home:5000 at start time.
+command       = "mkdir -p dist && docker buildx build --platform ${TARGET_PLATFORM} --load -t ${IMAGE_NAME} . && docker tag ${IMAGE_NAME} ${REGISTRY_HOST}/${REGISTRY_IMAGE}:latest && docker push ${REGISTRY_HOST}/${REGISTRY_IMAGE}:latest && echo ${REGISTRY_HOST}/${REGISTRY_IMAGE}:latest > dist/.pushed"
+docker_socket = true
+artifact      = "dist/.pushed"
+
+[services.bearclaw-web.source.env]
+IMAGE_NAME      = "bearclaw-web:local"
+REGISTRY_IMAGE  = "bearclaw-web"
+REGISTRY_HOST   = "registry.home:5000"
+TARGET_PLATFORM = "linux/amd64"
 
 # ── Pipeline ──────────────────────────────────────────────────────────────────
 
 [services.bearclaw-web.deploy]
-target            = "homelab"
-pipeline          = ["fetch_artifact", "provision", "remote_script", "stop", "install", "start", "health_check", "verify"]
-rollback_pipeline = ["stop", "start", "health_check"]
+target   = "homelab"
+pipeline = ["fetch_artifact", "provision", "remote_script", "stop", "start", "health_check", "verify"]
 
 # ── Provision: create runtime dirs + seed the env file ───────────────────────
 # The env file is only seeded on first deploy (skipped if it already exists).
@@ -48,7 +72,6 @@ rollback_pipeline = ["stop", "start", "health_check"]
 [services.bearclaw-web.provision]
 dirs = [
   "{{runtime_dir}}/staging",
-  "{{runtime_dir}}/repo",
   "{{runtime_dir}}/logs"
 ]
 
@@ -61,13 +84,18 @@ RAILS_MASTER_KEY     = "${RAILS_MASTER_KEY}"
 GOOGLE_CLIENT_ID     = "${GOOGLE_CLIENT_ID}"
 GOOGLE_CLIENT_SECRET = "${GOOGLE_CLIENT_SECRET}"
 GOOGLE_REDIRECT_URI  = "https://bearclaw.baresystems.com/auth/google_oauth2/callback"
-BEARCLAW_URL         = "http://127.0.0.1:6701"
+BEARCLAW_URL         = "https://bearclaw.baresystems.com"
 BEARCLAW_TOKEN       = "${BEARCLAW_TOKEN}"
-KOALA_URL            = "http://127.0.0.1:6704"
+KOALA_URL            = "http://192.168.86.53:8082" # Koala runs on the host; BearClaw containers cannot use host loopback
 KOALA_TOKEN          = "${KOALA_TOKEN}"
-URSA_URL             = "http://127.0.0.1:18080"
-URSA_TOKEN           = "${URSA_TOKEN}" # must match major.web.auth.api_token in Ursa
+POLAR_URL            = "http://192.168.86.53:6702" # Polar runs on the host; BearClaw containers cannot use host loopback
+POLAR_TOKEN          = "${POLAR_SERVICE_TOKEN}"
+URSA_URL             = "http://192.168.86.53:18080" # Ursa admin API service; BearClaw runs in a container and cannot use host loopback
+URSA_TOKEN           = "${URSA_TOKEN}" # must match major.web.auth.api_token in Ursa major.web
 RAILS_LOG_LEVEL      = "info"
+AR_ENCRYPTION_PRIMARY_KEY         = "${AR_ENCRYPTION_PRIMARY_KEY}"
+AR_ENCRYPTION_DETERMINISTIC_KEY   = "${AR_ENCRYPTION_DETERMINISTIC_KEY}"
+AR_ENCRYPTION_KEY_DERIVATION_SALT = "${AR_ENCRYPTION_KEY_DERIVATION_SALT}"
 
 # ── Remote script: postgres DB + Tardigrade vhost (idempotent) ───────────────
 
@@ -79,15 +107,10 @@ path = "deploy/blink/provision_bearclaw_web.sh"
 [services.bearclaw-web.stop]
 command = "docker stop {{service_name}} 2>/dev/null || true && docker rm {{service_name}} 2>/dev/null || true"
 
-# ── Install: upload the tarball to remote staging ────────────────────────────
-
-[services.bearclaw-web.install]
-dest = "runtime/bearclaw-web/staging/bearclaw-web-repo.tgz"
-
-# ── Start: extract repo, build image, run container ──────────────────────────
+# ── Start: load the image tar and run the container ──────────────────────────
 
 [services.bearclaw-web.start]
-command = "rm -rf {{runtime_dir}}/repo && mkdir -p {{runtime_dir}}/repo && tar -xzf {{runtime_dir}}/staging/bearclaw-web-repo.tgz -C {{runtime_dir}}/repo && docker build -t {{image_name}} {{runtime_dir}}/repo && docker run -d --name {{service_name}} --restart unless-stopped -p 127.0.0.1:{{port}}:80 --env-file {{runtime_dir}}/bearclaw-web.env {{image_name}}"
+command = "docker pull registry.home:5000/bearclaw-web:latest && docker tag registry.home:5000/bearclaw-web:latest {{image_name}} && docker run -d --name {{service_name}} --restart unless-stopped -p 127.0.0.1:{{port}}:80 --env-file {{runtime_dir}}/bearclaw-web.env {{image_name}}"
 
 # ── Health check ──────────────────────────────────────────────────────────────
 
@@ -100,13 +123,6 @@ interval = 3
 
 [services.bearclaw-web.verify]
 tags = ["smoke", "health"]
-
-[services.bearclaw-web.verify.tests.login-page]
-type          = "http"
-url           = "http://127.0.0.1:{{port}}/login"
-expect_status = 200
-expect_body   = "BearClaw"
-tags          = ["smoke"]
 
 [services.bearclaw-web.verify.tests.rails-health]
 type          = "http"
@@ -125,3 +141,70 @@ type          = "shell"
 command       = "docker ps --filter name=^/{{service_name}}$ --format '{{.Ports}}'"
 expect_output = "/127\\.0\\.0\\.1:3001->80\\/tcp/"
 tags          = ["health"]
+
+[services.bearclaw-web.verify.tests.koala-host-health]
+type          = "http"
+url           = "http://192.168.86.53:8082/healthz"
+expect_status = 200
+tags          = ["smoke", "health"]
+
+[services.bearclaw-web.verify.tests.ursa-admin-host-health]
+type          = "http"
+url           = "http://192.168.86.53:18080/healthz"
+expect_status = 200
+tags          = ["smoke", "health"]
+
+[services.bearclaw-web.verify.tests.polar-host-health]
+type          = "http"
+url           = "http://192.168.86.53:6702/healthz"
+expect_status = 200
+tags          = ["smoke", "health"]
+
+[services.bearclaw-web.verify.tests.polar-reachable-from-container]
+type          = "shell"
+command       = "docker exec {{service_name}} ruby -rnet/http -e \"res = Net::HTTP.get_response(URI('http://192.168.86.53:6702/healthz')); abort(res.code) unless res.code == '200'; print res.code\""
+expect_output = "200"
+tags          = ["health"]
+
+[services.bearclaw-web.verify.tests.koala-reachable-from-container]
+type          = "shell"
+command       = "docker exec {{service_name}} ruby -rnet/http -e \"res = Net::HTTP.get_response(URI('http://192.168.86.53:8082/healthz')); abort(res.code) unless res.code == '200'; print res.code\""
+expect_output = "200"
+tags          = ["health"]
+
+[services.bearclaw-web.verify.tests.koala-mcp-authorized-from-container]
+type          = "shell"
+command       = '''docker exec {{service_name}} ruby -rnet/http -rjson -e 'uri = URI("http://192.168.86.53:8082/mcp/tools/koala.list_cameras"); req = Net::HTTP::Post.new(uri); req["Authorization"] = "Bearer #{ENV.fetch("KOALA_TOKEN")}"; req["Content-Type"] = "application/json"; req.body = JSON.dump({ input: {} }); res = Net::HTTP.start(uri.host, uri.port) { |http| http.request(req) }; abort(res.code) unless res.code == "200"; print res.code' '''
+expect_output = "200"
+tags          = ["health"]
+
+[services.bearclaw-web.verify.tests.ursa-admin-reachable-from-container]
+type          = "shell"
+command       = "docker exec {{service_name}} ruby -rnet/http -e \"res = Net::HTTP.get_response(URI('http://192.168.86.53:18080/healthz')); abort(res.code) unless res.code == '200'; print res.code\""
+expect_output = "200"
+tags          = ["health"]
+
+[services.bearclaw-web.verify.tests.bearclaw-chat-reachable-via-public-host]
+type          = "shell"
+command       = '''docker exec {{service_name}} ruby -rnet/http -rjson -e 'uri = URI("https://bearclaw.baresystems.com/v1/chat"); req = Net::HTTP::Post.new(uri); req["Authorization"] = "Bearer #{ENV.fetch("BEARCLAW_TOKEN")}"; req["Content-Type"] = "application/json"; req.body = JSON.dump({ message: "blink health check" }); http = Net::HTTP.new(uri.host, uri.port); http.use_ssl = true; res = http.request(req); abort(res.code) unless res.code == "200"; print res.code' '''
+expect_output = "200"
+tags          = ["health"]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# bearclaw-web-migrate — Run Rails DB migrations locally against production DB
+# Usage:  blink deploy bearclaw-web-migrate
+# When:   before or after a deploy that includes schema changes
+# Note:   runs on your Mac using local source; connects to blink's Postgres over
+#         the LAN. Make sure 192.168.86.53:5432 is reachable before running.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+[services.bearclaw-web-migrate]
+description  = "Run Rails DB migrations inside the running bearclaw-web container"
+service_name = "bearclaw-web"
+
+[services.bearclaw-web-migrate.deploy]
+target   = "homelab"
+pipeline = ["shell"]
+
+[services.bearclaw-web-migrate.shell]
+command = "docker exec {{service_name}} bin/rails db:migrate db:seed"

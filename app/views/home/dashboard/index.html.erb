@@ -1,27 +1,66 @@
 <% content_for :title, "Home — BearClaw" %>
 
-<div class="max-w-5xl mx-auto">
-  <h1 class="text-2xl font-bold text-white mb-1">Home</h1>
-  <p class="text-gray-500 text-sm mb-8">Koala home monitoring</p>
+<div class="w-full" data-controller="dashboard-sync">
+  <div class="mb-4 flex items-center justify-between">
+    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-400">Home Ops</p>
+    <div class="flex items-center gap-3">
+      <span id="dashboard-sync-status" data-dashboard-sync-target="status">
+        <span class="text-xs text-gray-600">Connecting…</span>
+      </span>
+      <%= link_to(@edit_mode ? "Done Editing" : "Edit", home_root_path(edit: @edit_mode ? nil : 1), class: "rounded-lg border border-sky-700/70 bg-sky-900/30 px-3 py-1.5 text-sm font-medium text-sky-200 transition hover:bg-sky-900/50") %>
+      <%= link_to "Cameras", home_cameras_path, class: "rounded-lg border border-gray-700 px-3 py-1.5 text-sm text-gray-300 transition hover:bg-gray-800/40" %>
+      <%= link_to "Zones", home_zones_path, class: "rounded-lg border border-gray-700 px-3 py-1.5 text-sm text-gray-300 transition hover:bg-gray-800/40" %>
+    </div>
+  </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <%= link_to home_cameras_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
-      <h2 class="text-white font-semibold mb-1">Cameras</h2>
-      <p class="text-gray-500 text-sm">Live camera feeds and discovery</p>
-    <% end %>
-    <%= link_to home_zones_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
-      <h2 class="text-white font-semibold mb-1">Zones</h2>
-      <p class="text-gray-500 text-sm">Detection zone states</p>
-    <% end %>
-    <%= link_to home_packages_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
-      <h2 class="text-white font-semibold mb-1">Package Detection</h2>
-      <p class="text-gray-500 text-sm">Mail and package inference at door</p>
-    <% end %>
-    <% if current_user.admin? %>
-      <%= link_to home_firmware_index_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
-        <h2 class="text-white font-semibold mb-1">Firmware</h2>
-        <p class="text-gray-500 text-sm">Device update rollouts</p>
-      <% end %>
+  <% if @koala_error.present? %>
+    <div class="mb-4 rounded-2xl border border-amber-800/70 bg-amber-950/60 px-5 py-4">
+      <p class="text-sm font-semibold text-amber-200">Koala sync failed</p>
+      <p class="mt-1 text-sm text-amber-100/80"><%= @koala_error %></p>
+    </div>
+  <% end %>
+
+  <% if @polar_error.present? %>
+    <div class="mb-4 rounded-2xl border border-cyan-800/70 bg-cyan-950/60 px-5 py-4">
+      <p class="text-sm font-semibold text-cyan-200">Polar sync failed</p>
+      <p class="mt-1 text-sm text-cyan-100/80"><%= @polar_error %></p>
+    </div>
+  <% end %>
+
+  <% if @edit_mode %>
+    <p class="mb-3 text-xs uppercase tracking-[0.22em] text-sky-300">Drag a tile header to move · resize corner to resize</p>
+  <% end %>
+
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <section>
+      <div class="overflow-x-auto pb-3">
+        <div
+          class="grid auto-rows-[minmax(20rem,_1fr)] gap-4 min-w-[48rem]"
+          style="grid-template-columns: repeat(<%= @dashboard.columns %>, minmax(0, 1fr));"
+          <% if @edit_mode %>
+            data-controller="dashboard-layout"
+            data-dashboard-layout-columns-value="<%= @dashboard.columns %>"
+            data-dashboard-layout-max-height-value="3"
+            data-dashboard-layout-editing-class="ring-2 ring-sky-400/80"
+            data-dashboard-layout-dragging-class="opacity-80"
+          <% end %>
+        >
+          <% @dashboard.dashboard_tiles.each do |tile| %>
+            <%= render "home/dashboard_tile", tile: tile, edit_mode: @edit_mode %>
+          <% end %>
+        </div>
+      </div>
+    </section>
+
+    <% if @edit_mode %>
+      <aside>
+        <%= render "home/dashboard_editor",
+          dashboard: @dashboard,
+          service_providers: @service_providers,
+          service_connections: @service_connections,
+          devices: @devices,
+          available_capabilities: @available_capabilities %>
+      </aside>
     <% end %>
   </div>
 </div>

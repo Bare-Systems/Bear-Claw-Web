@@ -1,0 +1,31 @@
+<% capability    = widget.device_capability %>
+<% state        = capability&.state_hash || {} %>
+<% status       = capability&.status_label || "unknown" %>
+<% primary_value = state["display_value"].presence || state["value"].presence || "—" %>
+<% primary_unit  = state["display_value"].present? ? state["quality"].presence : state["unit"].presence %>
+<%# Derive a soft value colour from the Polar quality field when present %>
+<% value_color = case state["quality"].to_s
+                 when "good"        then "text-white"
+                 when "estimated"   then "text-amber-300"
+                 when "outlier"     then "text-orange-300"
+                 when "unavailable" then "text-gray-500"
+                 else                    "text-white"
+                 end %>
+
+<section id="widget-<%= widget.id %>" class="rounded-xl border border-gray-800 bg-gray-900/70 p-4">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <h4 class="text-sm font-semibold text-white"><%= widget.display_title %></h4>
+      <p class="mt-1 text-xs text-gray-500"><%= widget.device&.name || "Unassigned device" %></p>
+    </div>
+    <span class="rounded-full px-2 py-1 text-xs font-medium capitalize <%= ursa_status_classes(status) %>"><%= status %></span>
+  </div>
+
+  <div class="mt-5 flex items-end justify-between">
+    <div>
+      <p class="text-3xl font-semibold <%= value_color %>"><%= primary_value %></p>
+      <p class="mt-1 text-sm text-gray-500"><%= primary_unit || "No sensor reading yet" %></p>
+    </div>
+    <p class="text-xs text-gray-500"><%= state["last_seen_at"].presence || "Awaiting sync" %></p>
+  </div>
+</section>

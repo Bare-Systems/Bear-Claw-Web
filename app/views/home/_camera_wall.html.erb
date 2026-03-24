@@ -1,0 +1,56 @@
+<% if koala_error.present? %>
+  <div class="mb-6 rounded-xl border border-red-700 bg-red-900/50 px-5 py-4">
+    <p class="text-sm font-semibold text-red-300">Koala is unavailable</p>
+    <p class="mt-1 text-sm text-red-200"><%= koala_error %></p>
+  </div>
+<% end %>
+
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+  <% camera_slots.each do |camera| %>
+    <% status_classes = case camera[:status]
+      when "available"
+        "bg-emerald-950 text-emerald-300 border border-emerald-800/60"
+      when "degraded"
+        "bg-amber-950 text-amber-300 border border-amber-800/60"
+      when "unavailable"
+        "bg-red-950 text-red-300 border border-red-800/60"
+      else
+        "bg-gray-900 text-gray-300 border border-gray-800"
+      end %>
+    <article class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+      <div class="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-sm font-semibold text-white"><%= camera[:name] %></h3>
+          <p class="mt-1 text-xs text-gray-500"><%= camera[:zone_id].to_s.humanize %> · <%= camera[:selected_source] %></p>
+        </div>
+        <span class="rounded-full px-2 py-1 text-xs font-medium capitalize <%= status_classes %>"><%= camera[:status] %></span>
+      </div>
+
+      <div
+        class="relative overflow-hidden rounded-lg border border-gray-800 bg-gray-950"
+        style="height: 12rem;"
+        data-controller="camera-feed"
+        data-camera-feed-url-value="<%= camera[:snapshot_path] %>"
+        data-camera-feed-interval-value="4000"
+      >
+        <img
+          alt="<%= camera[:name] %> live feed"
+          class="hidden h-full w-full object-cover"
+          data-action="load->camera-feed#loaded error->camera-feed#failed"
+          data-camera-feed-target="image"
+        >
+        <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center" data-camera-feed-target="placeholder">
+          <span class="rounded-full border border-gray-700 px-2 py-1 text-xs uppercase tracking-wide text-gray-400">No Signal</span>
+          <p class="text-sm text-gray-500">
+            <%= camera[:last_error].presence || "Waiting for a fresh Koala snapshot." %>
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-3 flex items-center justify-between gap-3 text-xs text-gray-500">
+        <span><%= camera[:id] %></span>
+        <span><%= camera[:last_probed_at].present? ? ursa_timestamp(camera[:last_probed_at]) : "probe pending" %></span>
+      </div>
+    </article>
+  <% end %>
+</div>
