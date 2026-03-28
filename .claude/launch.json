@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "bearclaw-web",
-      "runtimeExecutable": "bin/dev",
-      "runtimeArgs": [],
+      "runtimeExecutable": "/usr/local/bin/blink",
+      "runtimeArgs": ["forward", "bearclaw-web"],
       "port": 3000
     }
   ]

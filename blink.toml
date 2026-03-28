@@ -25,8 +25,9 @@ db_url = "postgres://bearclaw_web:bear_claw_web_prod@192.168.86.53:5432/bear_cla
 # DB:      bearclaw-postgres container (postgres:16) on blink
 # Network contract:
 #   - Keep BearClaw loopback-only on 127.0.0.1:3001
-#   - Reach Koala and Ursa from inside the container via 192.168.86.53
-#   - Do not point container clients at host loopback for Koala/Ursa
+#   - Reach Koala from inside the container via 192.168.86.247 (jetson)
+#   - Reach Ursa/Polar from inside the container via 192.168.86.53 (blink)
+#   - Do not point container clients at host loopback for any service
 # ═══════════════════════════════════════════════════════════════════════════════
 
 [services.bearclaw-web]
@@ -86,7 +87,7 @@ GOOGLE_CLIENT_SECRET = "${GOOGLE_CLIENT_SECRET}"
 GOOGLE_REDIRECT_URI  = "https://bearclaw.baresystems.com/auth/google_oauth2/callback"
 BEARCLAW_URL         = "https://bearclaw.baresystems.com"
 BEARCLAW_TOKEN       = "${BEARCLAW_TOKEN}"
-KOALA_URL            = "http://192.168.86.53:8082" # Koala runs on the host; BearClaw containers cannot use host loopback
+KOALA_URL            = "${KOALA_URL}"
 KOALA_TOKEN          = "${KOALA_TOKEN}"
 POLAR_URL            = "http://192.168.86.53:6702" # Polar runs on the host; BearClaw containers cannot use host loopback
 POLAR_TOKEN          = "${POLAR_SERVICE_TOKEN}"
@@ -102,6 +103,13 @@ AR_ENCRYPTION_KEY_DERIVATION_SALT = "${AR_ENCRYPTION_KEY_DERIVATION_SALT}"
 [services.bearclaw-web.remote_script]
 path = "deploy/blink/provision_bearclaw_web.sh"
 
+# ── Forward ───────────────────────────────────────────────────────────────────
+# Run `blink forward bearclaw-web` to tunnel localhost:3000 → blink:3000
+
+[services.bearclaw-web.forward]
+local_port  = 3000
+remote_port = 3000
+
 # ── Stop ──────────────────────────────────────────────────────────────────────
 
 [services.bearclaw-web.stop]
@@ -110,7 +118,7 @@ command = "docker stop {{service_name}} 2>/dev/null || true && docker rm {{servi
 # ── Start: load the image tar and run the container ──────────────────────────
 
 [services.bearclaw-web.start]
-command = "docker pull registry.home:5000/bearclaw-web:latest && docker tag registry.home:5000/bearclaw-web:latest {{image_name}} && docker run -d --name {{service_name}} --restart unless-stopped -p 127.0.0.1:{{port}}:80 --env-file {{runtime_dir}}/bearclaw-web.env {{image_name}}"
+command = "docker pull registry.home:5000/bearclaw-web:latest && docker tag registry.home:5000/bearclaw-web:latest {{image_name}} && docker run -d --name {{service_name}} --restart unless-stopped -p 127.0.0.1:{{port}}:80 --dns 192.168.86.53 --add-host bearclaw.baresystems.com:192.168.86.53 --env-file {{runtime_dir}}/bearclaw-web.env {{image_name}}"
 
 # ── Health check ──────────────────────────────────────────────────────────────
 
@@ -144,7 +152,7 @@ tags          = ["health"]
 
 [services.bearclaw-web.verify.tests.koala-host-health]
 type          = "http"
-url           = "http://192.168.86.53:8082/healthz"
+url           = "http://192.168.86.247:8082/healthz"
 expect_status = 200
 tags          = ["smoke", "health"]
 
@@ -168,13 +176,13 @@ tags          = ["health"]
 
 [services.bearclaw-web.verify.tests.koala-reachable-from-container]
 type          = "shell"
-command       = "docker exec {{service_name}} ruby -rnet/http -e \"res = Net::HTTP.get_response(URI('http://192.168.86.53:8082/healthz')); abort(res.code) unless res.code == '200'; print res.code\""
+command       = "docker exec {{service_name}} ruby -rnet/http -e \"res = Net::HTTP.get_response(URI('http://192.168.86.247:8082/healthz')); abort(res.code) unless res.code == '200'; print res.code\""
 expect_output = "200"
 tags          = ["health"]
 
 [services.bearclaw-web.verify.tests.koala-mcp-authorized-from-container]
 type          = "shell"
-command       = '''docker exec {{service_name}} ruby -rnet/http -rjson -e 'uri = URI("http://192.168.86.53:8082/mcp/tools/koala.list_cameras"); req = Net::HTTP::Post.new(uri); req["Authorization"] = "Bearer #{ENV.fetch("KOALA_TOKEN")}"; req["Content-Type"] = "application/json"; req.body = JSON.dump({ input: {} }); res = Net::HTTP.start(uri.host, uri.port) { |http| http.request(req) }; abort(res.code) unless res.code == "200"; print res.code' '''
+command       = '''docker exec {{service_name}} ruby -rnet/http -rjson -e 'uri = URI("http://192.168.86.247:8082/mcp/tools/koala.list_cameras"); req = Net::HTTP::Post.new(uri); req["Authorization"] = "Bearer #{ENV.fetch("KOALA_TOKEN")}"; req["Content-Type"] = "application/json"; req.body = JSON.dump({ input: {} }); res = Net::HTTP.start(uri.host, uri.port) { |http| http.request(req) }; abort(res.code) unless res.code == "200"; print res.code' '''
 expect_output = "200"
 tags          = ["health"]
 
