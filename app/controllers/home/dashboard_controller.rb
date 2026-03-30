@@ -27,12 +27,14 @@ module Home
     private
 
     def sync_koala_inventory
+      return if ENV["KOALA_URL"].blank?
+
       Home::KoalaDeviceSync.new(
         client: koala_client,
         base_url: ENV["KOALA_URL"],
         user: current_home.owner
       ).sync!
-    rescue KoalaClient::Error => e
+    rescue StandardError => e
       @koala_error = e.message
     end
 
@@ -44,7 +46,7 @@ module Home
         base_url: ENV["POLAR_URL"],
         user: current_home.owner
       ).sync!
-    rescue PolarClient::Error => e
+    rescue StandardError => e
       @polar_error = e.message
     end
 
@@ -70,7 +72,7 @@ module Home
         base_url: ENV["KODIAK_URL"],
         user: current_home.owner
       ).sync!
-    rescue KodiakClient::Error => e
+    rescue StandardError => e
       @kodiak_error = e.message
     end
 
@@ -82,13 +84,13 @@ module Home
         base_url: ENV["URSA_URL"],
         user: current_home.owner
       ).sync!
-    rescue UrsaClient::Error => e
+    rescue StandardError => e
       @ursa_error = e.message
     end
 
     def kodiak_client
       @kodiak_client ||= KodiakClient.new(
-        base_url: ENV.fetch("KODIAK_URL", "http://192.168.86.53:8000"),
+        base_url: ENV.fetch("KODIAK_URL", "http://192.168.86.53:6704"),
         token: ENV.fetch("KODIAK_TOKEN", "")
       )
     end

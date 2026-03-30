@@ -65,7 +65,7 @@ class Home::KodiakDeviceSyncTest < ActiveSupport::TestCase
     fake.define_singleton_method(:portfolio_summary) { {} }
 
     assert_raises(KodiakClient::RequestError) do
-      Home::KodiakDeviceSync.new(client: fake, base_url: "http://192.168.86.53:8000", user: @user).sync!
+      Home::KodiakDeviceSync.new(client: fake, base_url: "http://192.168.86.53:6704", user: @user).sync!
     end
 
     connection = ServiceConnection.find_by!(key: "kodiak")
@@ -101,7 +101,7 @@ class Home::KodiakDeviceSyncTest < ActiveSupport::TestCase
 
     Home::KodiakDeviceSync.new(
       client:   fake,
-      base_url: "http://192.168.86.53:8000",
+      base_url: "http://192.168.86.53:6704",
       user:     @user
     ).sync!
   end

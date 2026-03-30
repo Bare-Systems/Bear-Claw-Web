@@ -114,7 +114,7 @@ class Home::DashboardProvisionerTest < ActiveSupport::TestCase
       adapter: "kodiak",
       credential_strategy: "environment",
       status: "online",
-      base_url: "http://192.168.86.53:8000"
+      base_url: "http://192.168.86.53:6704"
     )
     portfolio_device = Device.create!(
       service_connection: kodiak_connection,

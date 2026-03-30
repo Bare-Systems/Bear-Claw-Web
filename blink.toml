@@ -91,7 +91,7 @@ KOALA_URL            = "${KOALA_URL}"
 KOALA_TOKEN          = "${KOALA_TOKEN}"
 POLAR_URL            = "http://192.168.86.53:6702" # Polar runs on the host; BearClaw containers cannot use host loopback
 POLAR_TOKEN          = "${POLAR_SERVICE_TOKEN}"
-KODIAK_URL           = "http://192.168.86.53:8000" # Kodiak trading server; same host, accessible from container via LAN IP
+KODIAK_URL           = "http://192.168.86.53:6704" # Kodiak trading server; same host, accessible from container via LAN IP
 KODIAK_TOKEN         = "${KODIAK_API_TOKEN}"
 URSA_URL             = "http://192.168.86.53:18080" # Ursa admin API service; BearClaw runs in a container and cannot use host loopback
 URSA_TOKEN           = "${URSA_TOKEN}" # must match major.web.auth.api_token in Ursa major.web
@@ -172,7 +172,7 @@ tags          = ["smoke", "health"]
 
 [services.bearclaw-web.verify.tests.kodiak-host-health]
 type          = "http"
-url           = "http://192.168.86.53:8000/health"
+url           = "http://192.168.86.53:6704/health"
 expect_status = 200
 tags          = ["smoke", "health"]
 
