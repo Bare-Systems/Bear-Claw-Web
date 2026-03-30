@@ -7,6 +7,10 @@ class Home::DevicesControllerTest < ActionController::TestCase
     @user = User.find_by!(email: users(:one)["email"])
     @user.update!(role: :operator)
     @request.session[:user_id] = @user.id
+
+    @household = Household.create!(name: "Test Home", owner: @user)
+    HouseholdMembership.create!(household: @household, user: @user)
+
     provider = ServiceProvider.create!(key: "custom", name: "Custom", provider_type: "hybrid")
     @connection = ServiceConnection.create!(
       service_provider: provider,

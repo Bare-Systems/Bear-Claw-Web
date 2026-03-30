@@ -8,10 +8,15 @@ module Home
         redirect_to root_path, alert: "No household has been set up yet. Ask an admin to run db:seed." and return
       end
 
-      sync_koala_inventory if current_user.admin?
-      sync_polar_inventory if current_user.admin?
-      @dashboard = Home::DashboardProvisioner.new(user: current_home.owner).home_dashboard
-      @dashboard = Dashboard.includes(dashboard_tiles: { dashboard_widgets: { device_capability: :device } }).find(@dashboard.id)
+      sync_koala_inventory  if current_user.admin?
+      sync_polar_inventory  if current_user.admin?
+      sync_kodiak_inventory if current_user.admin?
+      sync_ursa_inventory   if current_user.admin?
+
+      provisioner = Home::DashboardProvisioner.new(user: current_home.owner)
+      @dashboards = provisioner.all_dashboards
+      @dashboard  = provisioner.dashboard_named(params[:dashboard]) || @dashboards.first
+      @dashboard  = Dashboard.includes(dashboard_tiles: { dashboard_widgets: { device_capability: :device } }).find(@dashboard.id)
       @available_capabilities = DeviceCapability.joins(:device).includes(:device).where(devices: { user_id: current_home.owner_id }).order("devices.name ASC", "device_capabilities.name ASC")
       @service_providers = ServiceProvider.includes(service_connections: { devices: :device_capabilities }).order(:name)
       @service_connections = ServiceConnection.includes(:service_provider).order(:name)
@@ -54,6 +59,45 @@ module Home
       @polar_client ||= PolarClient.new(
         base_url: ENV["POLAR_URL"],
         token: ENV["POLAR_TOKEN"]
+      )
+    end
+
+    def sync_kodiak_inventory
+      return if ENV["KODIAK_URL"].blank? || ENV["KODIAK_TOKEN"].blank?
+
+      Home::KodiakDeviceSync.new(
+        client: kodiak_client,
+        base_url: ENV["KODIAK_URL"],
+        user: current_home.owner
+      ).sync!
+    rescue KodiakClient::Error => e
+      @kodiak_error = e.message
+    end
+
+    def sync_ursa_inventory
+      return if ENV["URSA_URL"].blank? || ENV["URSA_TOKEN"].blank?
+
+      Home::UrsaDeviceSync.new(
+        client: ursa_client,
+        base_url: ENV["URSA_URL"],
+        user: current_home.owner
+      ).sync!
+    rescue UrsaClient::Error => e
+      @ursa_error = e.message
+    end
+
+    def kodiak_client
+      @kodiak_client ||= KodiakClient.new(
+        base_url: ENV.fetch("KODIAK_URL", "http://192.168.86.53:8000"),
+        token: ENV.fetch("KODIAK_TOKEN", "")
+      )
+    end
+
+    def ursa_client
+      @ursa_client ||= UrsaClient.new(
+        base_url: ENV["URSA_URL"],
+        token: ENV["URSA_TOKEN"],
+        actor: "bearclaw-dashboard"
       )
     end
   end

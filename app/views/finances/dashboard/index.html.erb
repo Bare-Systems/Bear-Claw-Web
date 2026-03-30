@@ -1,0 +1,94 @@
+<% content_for :title, "Finances — BearClaw" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white mb-1">Finances</h1>
+      <p class="text-gray-500 text-sm">Kodiak trading dashboard — paper account</p>
+    </div>
+    <div class="flex gap-2">
+      <%= link_to "Portfolio", finances_portfolio_path, class: "px-3 py-1.5 text-sm rounded bg-gray-800 text-gray-300 hover:text-white" %>
+      <%= link_to "Strategies", finances_strategies_path, class: "px-3 py-1.5 text-sm rounded bg-gray-800 text-gray-300 hover:text-white" %>
+      <%= link_to "Orders", finances_orders_path, class: "px-3 py-1.5 text-sm rounded bg-gray-800 text-gray-300 hover:text-white" %>
+      <%= link_to "Engine", finances_engine_root_path, class: "px-3 py-1.5 text-sm rounded bg-gray-800 text-gray-300 hover:text-white" %>
+    </div>
+  </div>
+
+  <% if @error %>
+    <div class="bg-red-900/40 border border-red-800 text-red-300 rounded-xl p-4 text-sm">
+      <%= @error %>
+    </div>
+  <% else %>
+
+    <%# Engine status banner %>
+    <% if @engine_status %>
+      <% running = @engine_status["running"] || @engine_status.dig("status") == "running" %>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="inline-block w-2.5 h-2.5 rounded-full <%= running ? 'bg-green-400' : 'bg-gray-600' %>"></span>
+          <span class="text-white font-medium">Trading Engine</span>
+          <span class="text-gray-500 text-sm"><%= running ? "Running" : "Stopped" %></span>
+        </div>
+        <%= link_to "Manage", finances_engine_root_path, class: "text-sky-400 hover:text-sky-300 text-sm" %>
+      </div>
+    <% end %>
+
+    <%# Portfolio summary cards %>
+    <% if @portfolio %>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <p class="text-gray-500 text-xs uppercase tracking-wide mb-1">Equity</p>
+          <p class="text-2xl font-bold text-white"><%= number_to_currency(@portfolio["equity"] || @portfolio.dig("account", "equity")) %></p>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <p class="text-gray-500 text-xs uppercase tracking-wide mb-1">Cash</p>
+          <p class="text-2xl font-bold text-white"><%= number_to_currency(@portfolio["cash"] || @portfolio.dig("account", "cash")) %></p>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <p class="text-gray-500 text-xs uppercase tracking-wide mb-1">Buying Power</p>
+          <p class="text-2xl font-bold text-white"><%= number_to_currency(@portfolio["buying_power"] || @portfolio.dig("account", "buying_power")) %></p>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Top positions %>
+    <% if @positions.present? %>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-800 flex items-center justify-between">
+          <h2 class="text-white font-semibold">Open Positions</h2>
+          <%= link_to "View all", finances_portfolio_path, class: "text-sky-400 hover:text-sky-300 text-sm" %>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+            <tr>
+              <th class="px-4 py-3 text-left font-medium">Symbol</th>
+              <th class="px-4 py-3 text-right font-medium">Qty</th>
+              <th class="px-4 py-3 text-right font-medium">Avg Cost</th>
+              <th class="px-4 py-3 text-right font-medium">Market Value</th>
+              <th class="px-4 py-3 text-right font-medium">P&L</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800">
+            <% Array(@positions).first(5).each do |pos| %>
+              <% pl = pos["unrealized_pl"].to_f %>
+              <tr class="hover:bg-gray-800/40">
+                <td class="px-4 py-3 font-mono font-semibold text-white"><%= pos["symbol"] %></td>
+                <td class="px-4 py-3 text-right text-gray-300 font-mono"><%= pos["qty"] %></td>
+                <td class="px-4 py-3 text-right text-gray-300 font-mono"><%= number_to_currency(pos["avg_entry_price"]) %></td>
+                <td class="px-4 py-3 text-right text-gray-300 font-mono"><%= number_to_currency(pos["market_value"]) %></td>
+                <td class="px-4 py-3 text-right font-mono <%= pl >= 0 ? 'text-green-400' : 'text-red-400' %>">
+                  <%= number_to_currency(pl) %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% elsif @positions %>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl px-5 py-8 text-center text-gray-500 text-sm">
+        No open positions.
+      </div>
+    <% end %>
+
+  <% end %>
+</div>

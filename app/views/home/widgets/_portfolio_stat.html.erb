@@ -1,0 +1,44 @@
+<% state  = widget.device_capability&.state_hash || {} %>
+<% value  = state["value"].to_f %>
+<% metric = widget.device_capability&.configuration_hash&.dig("metric").to_s %>
+<% is_pnl = metric.include?("pnl") || metric.include?("gain") %>
+<% value_class = if is_pnl
+                   value >= 0 ? "text-emerald-400" : "text-red-400"
+                 else
+                   "text-white"
+                 end %>
+<% sign = (is_pnl && value >= 0) ? "+" : "" %>
+
+<section id="widget-<%= widget.id %>" class="rounded-xl border border-gray-800 bg-gray-900/70 p-4 flex flex-col justify-between">
+  <div class="flex items-start justify-between gap-2">
+    <div class="min-w-0">
+      <h4 class="text-sm font-semibold text-white truncate"><%= widget.display_title %></h4>
+      <p class="mt-0.5 text-xs text-gray-500"><%= widget.device&.name || "Kodiak Portfolio" %></p>
+    </div>
+    <% if is_pnl %>
+      <span class="flex-shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium <%= value >= 0 ? 'border-emerald-700/60 bg-emerald-950/50 text-emerald-300' : 'border-red-700/60 bg-red-950/50 text-red-300' %>">
+        <%= value >= 0 ? "▲" : "▼" %> Today
+      </span>
+    <% else %>
+      <span class="flex-shrink-0 rounded-full border border-sky-800/50 bg-sky-950/40 px-2 py-0.5 text-xs font-medium text-sky-300">Live</span>
+    <% end %>
+  </div>
+
+  <div class="mt-5">
+    <p class="text-4xl font-bold leading-none tracking-tight <%= value_class %>">
+      <%= sign %><%= number_to_currency(value, precision: 2) %>
+    </p>
+    <p class="mt-1.5 text-sm text-gray-500">USD</p>
+  </div>
+
+  <div class="mt-4 flex items-center justify-between gap-3">
+    <p class="min-w-0 truncate text-xs text-gray-600">Kodiak · <%= metric.humanize.presence || "Portfolio" %></p>
+    <p class="flex-shrink-0 text-xs text-gray-600">
+      <% if (ts = state["last_seen_at"].presence) %>
+        <%= time_ago_in_words(Time.parse(ts)) %> ago
+      <% else %>
+        Awaiting sync
+      <% end %>
+    </p>
+  </div>
+</section>

@@ -1,0 +1,3 @@
+<%= turbo_stream.replace "strategy_#{@strategy["id"]}" do %>
+  <%= render "strategy_row", strategy: @strategy %>
+<% end %>

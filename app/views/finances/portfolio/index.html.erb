@@ -1,0 +1,87 @@
+<% content_for :title, "Portfolio — Finances — BearClaw" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white mb-1">Portfolio</h1>
+    <p class="text-gray-500 text-sm">Open positions and market movers.</p>
+  </div>
+
+  <% if @error %>
+    <div class="bg-red-900/40 border border-red-800 text-red-300 rounded-xl p-4 text-sm">
+      <%= @error %>
+    </div>
+  <% else %>
+
+    <%# Positions table %>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-800">
+        <h2 class="text-white font-semibold">Open Positions</h2>
+      </div>
+      <% if Array(@positions).any? %>
+        <table class="w-full text-sm">
+          <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+            <tr>
+              <th class="px-4 py-3 text-left font-medium">Symbol</th>
+              <th class="px-4 py-3 text-left font-medium">Side</th>
+              <th class="px-4 py-3 text-right font-medium">Qty</th>
+              <th class="px-4 py-3 text-right font-medium">Avg Cost</th>
+              <th class="px-4 py-3 text-right font-medium">Current Price</th>
+              <th class="px-4 py-3 text-right font-medium">Market Value</th>
+              <th class="px-4 py-3 text-right font-medium">Unrealized P&L</th>
+              <th class="px-4 py-3 text-right font-medium">P&L %</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800">
+            <% Array(@positions).each do |pos| %>
+              <% pl = pos["unrealized_pl"].to_f %>
+              <% pl_pct = pos["unrealized_plpc"].to_f * 100 rescue 0 %>
+              <tr class="hover:bg-gray-800/40">
+                <td class="px-4 py-3 font-mono font-semibold text-white"><%= pos["symbol"] %></td>
+                <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded-full <%= pos["side"] == "long" ? 'bg-green-900/60 text-green-300' : 'bg-red-900/60 text-red-300' %>"><%= pos["side"] %></span></td>
+                <td class="px-4 py-3 text-right text-gray-300 font-mono"><%= pos["qty"] %></td>
+                <td class="px-4 py-3 text-right text-gray-300 font-mono"><%= number_to_currency(pos["avg_entry_price"]) %></td>
+                <td class="px-4 py-3 text-right text-gray-300 font-mono"><%= number_to_currency(pos["current_price"]) %></td>
+                <td class="px-4 py-3 text-right text-gray-300 font-mono"><%= number_to_currency(pos["market_value"]) %></td>
+                <td class="px-4 py-3 text-right font-mono <%= pl >= 0 ? 'text-green-400' : 'text-red-400' %>"><%= number_to_currency(pl) %></td>
+                <td class="px-4 py-3 text-right font-mono <%= pl_pct >= 0 ? 'text-green-400' : 'text-red-400' %>"><%= number_to_percentage(pl_pct, precision: 2) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <div class="px-5 py-8 text-center text-gray-500 text-sm">No open positions.</div>
+      <% end %>
+    </div>
+
+    <%# Top movers %>
+    <% if Array(@movers).any? %>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-800">
+          <h2 class="text-white font-semibold">Top Movers</h2>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+            <tr>
+              <th class="px-4 py-3 text-left font-medium">Symbol</th>
+              <th class="px-4 py-3 text-right font-medium">Price</th>
+              <th class="px-4 py-3 text-right font-medium">Change</th>
+              <th class="px-4 py-3 text-right font-medium">Change %</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800">
+            <% Array(@movers).each do |mover| %>
+              <% chg = mover["change"].to_f %>
+              <tr class="hover:bg-gray-800/40">
+                <td class="px-4 py-3 font-mono font-semibold text-white"><%= mover["symbol"] %></td>
+                <td class="px-4 py-3 text-right text-gray-300 font-mono"><%= number_to_currency(mover["price"]) %></td>
+                <td class="px-4 py-3 text-right font-mono <%= chg >= 0 ? 'text-green-400' : 'text-red-400' %>"><%= number_to_currency(chg) %></td>
+                <td class="px-4 py-3 text-right font-mono <%= chg >= 0 ? 'text-green-400' : 'text-red-400' %>"><%= number_to_percentage((mover["percent_change"].to_f * 100 rescue mover["change_pct"].to_f), precision: 2) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+
+  <% end %>
+</div>

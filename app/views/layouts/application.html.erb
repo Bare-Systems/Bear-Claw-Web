@@ -36,6 +36,11 @@
                     class: "px-3 py-1.5 rounded hover:bg-gray-800 transition #{controller.class.name.start_with?('Security::') ? 'bg-gray-800 text-white' : 'text-gray-400'}" %>
             <% end %>
 
+            <% if current_user.can_access?(:finances) %>
+              <%= link_to "Finances", finances_root_path,
+                    class: "px-3 py-1.5 rounded hover:bg-gray-800 transition #{controller.class.name.start_with?('Finances::') ? 'bg-gray-800 text-white' : 'text-gray-400'}" %>
+            <% end %>
+
             <% if current_user.admin? %>
               <%= link_to "Admin", admin_root_path,
                     class: "px-3 py-1.5 rounded hover:bg-gray-800 transition #{controller.class.name.start_with?('Admin::') ? 'bg-gray-800 text-white' : 'text-gray-400'}" %>

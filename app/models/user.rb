@@ -51,6 +51,7 @@ class User < ApplicationRecord
     when :security then admin?
     when :agent    then operator? || admin?
     when :home     then viewer? || operator? || admin?
+    when :finances then operator? || admin?
     else true
     end
   end

@@ -58,6 +58,8 @@ module HomeHelper
     when "sensor_stat"      then "home/widgets/sensor_stat"
     when "air_quality_stat" then "home/widgets/air_quality_stat"
     when "switch_control"   then "home/widgets/switch_control"
+    when "portfolio_stat"   then "home/widgets/portfolio_stat"
+    when "security_stat"    then "home/widgets/security_stat"
     else                         "home/widgets/status_badge"
     end
   end

@@ -1,5 +1,5 @@
 class DashboardWidget < ApplicationRecord
-  WIDGET_TYPES = %w[camera_feed status_badge switch_control sensor_stat air_quality_stat].freeze
+  WIDGET_TYPES = %w[camera_feed status_badge switch_control sensor_stat air_quality_stat portfolio_stat security_stat].freeze
 
   belongs_to :dashboard_tile
   belongs_to :device_capability, optional: true

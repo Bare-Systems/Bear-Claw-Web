@@ -1,0 +1,42 @@
+<% state   = widget.device_capability&.state_hash || {} %>
+<% count  = state["value"].to_i %>
+<% unit   = state["unit"].presence || "items" %>
+<% status = widget.device_capability&.status_label || "unknown" %>
+<% breakdown = state["breakdown"].presence %>
+
+<section id="widget-<%= widget.id %>" class="rounded-xl border border-gray-800 bg-gray-900/70 p-4 flex flex-col justify-between">
+  <div class="flex items-start justify-between gap-2">
+    <div class="min-w-0">
+      <h4 class="text-sm font-semibold text-white truncate"><%= widget.display_title %></h4>
+      <p class="mt-0.5 text-xs text-gray-500"><%= widget.device&.name || "Ursa" %></p>
+    </div>
+    <span class="flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-medium capitalize <%= ursa_status_classes(status) %>"><%= status %></span>
+  </div>
+
+  <div class="mt-5">
+    <p class="text-5xl font-bold leading-none tracking-tight text-white"><%= count %></p>
+    <p class="mt-1.5 text-sm text-gray-500"><%= unit %></p>
+  </div>
+
+  <% if breakdown.present? %>
+    <dl class="mt-4 grid grid-cols-3 gap-2 rounded-lg border border-gray-800 bg-gray-950/60 p-3">
+      <% breakdown.each do |label, val| %>
+        <div class="text-center">
+          <dt class="text-xs text-gray-500 truncate"><%= label %></dt>
+          <dd class="mt-1 text-sm font-semibold text-gray-200"><%= val %></dd>
+        </div>
+      <% end %>
+    </dl>
+  <% end %>
+
+  <div class="mt-3 flex items-center justify-between gap-3">
+    <p class="min-w-0 truncate text-xs text-gray-600">Ursa · <%= unit.humanize %></p>
+    <p class="flex-shrink-0 text-xs text-gray-600">
+      <% if (ts = state["last_seen_at"].presence) %>
+        <%= time_ago_in_words(Time.parse(ts)) %> ago
+      <% else %>
+        Awaiting sync
+      <% end %>
+    </p>
+  </div>
+</section>

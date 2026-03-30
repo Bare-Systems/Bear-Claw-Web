@@ -1,5 +1,5 @@
 class DeviceCapability < ApplicationRecord
-  CAPABILITY_TYPES = %w[camera_feed switch sensor status].freeze
+  CAPABILITY_TYPES = %w[camera_feed switch sensor status finance].freeze
 
   belongs_to :device
 

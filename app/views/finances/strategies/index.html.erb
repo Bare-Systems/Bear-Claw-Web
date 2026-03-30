@@ -1,0 +1,38 @@
+<% content_for :title, "Strategies — Finances — BearClaw" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white mb-1">Strategies</h1>
+    <p class="text-gray-500 text-sm">Active and paused trading strategies.</p>
+  </div>
+
+  <% if @error %>
+    <div class="bg-red-900/40 border border-red-800 text-red-300 rounded-xl p-4 text-sm">
+      <%= @error %>
+    </div>
+  <% else %>
+    <div id="strategies-list" class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <% if Array(@strategies).any? %>
+        <table class="w-full text-sm">
+          <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+            <tr>
+              <th class="px-4 py-3 text-left font-medium">ID</th>
+              <th class="px-4 py-3 text-left font-medium">Type</th>
+              <th class="px-4 py-3 text-left font-medium">Symbol</th>
+              <th class="px-4 py-3 text-right font-medium">Qty</th>
+              <th class="px-4 py-3 text-left font-medium">Status</th>
+              <th class="px-4 py-3 text-left font-medium">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800">
+            <% Array(@strategies).each do |strat| %>
+              <%= render "strategy_row", strategy: strat %>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <div class="px-5 py-8 text-center text-gray-500 text-sm">No strategies configured.</div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

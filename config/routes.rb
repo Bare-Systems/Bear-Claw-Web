@@ -102,6 +102,24 @@ Rails.application.routes.draw do
     resources :integrations, only: [ :index, :create, :update, :destroy ]
   end
 
+  # Finances module — Kodiak trading dashboard
+  namespace :finances do
+    get "/",          to: "dashboard#index",  as: :root
+    get "/portfolio", to: "portfolio#index",  as: :portfolio
+    resources :strategies, only: [ :index ] do
+      member do
+        post :pause
+        post :resume
+      end
+    end
+    resources :orders, only: [ :index, :destroy ]
+    namespace :engine do
+      get  "/",      to: "status#index", as: :root
+      post "/start", to: "status#start", as: :start
+      post "/stop",  to: "status#stop",  as: :stop
+    end
+  end
+
   # Admin module
   namespace :admin do
     get "/",       to: "dashboard#index", as: :root

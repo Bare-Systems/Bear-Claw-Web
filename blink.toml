@@ -5,7 +5,7 @@ version = "1"
 
 [targets.homelab]
 type         = "ssh"
-host         = "blink"
+host         = "beelink"
 user         = "admin"
 base         = "/home/admin/baresystems"
 runtime_dir  = "/home/admin/baresystems/runtime/bearclaw-web"
@@ -91,6 +91,8 @@ KOALA_URL            = "${KOALA_URL}"
 KOALA_TOKEN          = "${KOALA_TOKEN}"
 POLAR_URL            = "http://192.168.86.53:6702" # Polar runs on the host; BearClaw containers cannot use host loopback
 POLAR_TOKEN          = "${POLAR_SERVICE_TOKEN}"
+KODIAK_URL           = "http://192.168.86.53:8000" # Kodiak trading server; same host, accessible from container via LAN IP
+KODIAK_TOKEN         = "${KODIAK_API_TOKEN}"
 URSA_URL             = "http://192.168.86.53:18080" # Ursa admin API service; BearClaw runs in a container and cannot use host loopback
 URSA_TOKEN           = "${URSA_TOKEN}" # must match major.web.auth.api_token in Ursa major.web
 RAILS_LOG_LEVEL      = "info"
@@ -168,6 +170,12 @@ url           = "http://192.168.86.53:6702/healthz"
 expect_status = 200
 tags          = ["smoke", "health"]
 
+[services.bearclaw-web.verify.tests.kodiak-host-health]
+type          = "http"
+url           = "http://192.168.86.53:8000/health"
+expect_status = 200
+tags          = ["smoke", "health"]
+
 [services.bearclaw-web.verify.tests.polar-reachable-from-container]
 type          = "shell"
 command       = "docker exec {{service_name}} ruby -rnet/http -e \"res = Net::HTTP.get_response(URI('http://192.168.86.53:6702/healthz')); abort(res.code) unless res.code == '200'; print res.code\""
@@ -197,6 +205,12 @@ type          = "shell"
 command       = '''docker exec {{service_name}} ruby -rnet/http -rjson -e 'uri = URI("https://bearclaw.baresystems.com/v1/chat"); req = Net::HTTP::Post.new(uri); req["Authorization"] = "Bearer #{ENV.fetch("BEARCLAW_TOKEN")}"; req["Content-Type"] = "application/json"; req.body = JSON.dump({ message: "blink health check" }); http = Net::HTTP.new(uri.host, uri.port); http.use_ssl = true; res = http.request(req); abort(res.code) unless res.code == "200"; print res.code' '''
 expect_output = "200"
 tags          = ["health"]
+
+[services.bearclaw-web.verify.tests.rails-test-suite]
+type          = "shell"
+command       = "docker exec {{service_name}} bundle exec rails test 2>&1 | tail -3"
+expect_output = "/0 failures, 0 errors/"
+tags          = ["smoke", "health"]
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # bearclaw-web-migrate — Run Rails DB migrations locally against production DB

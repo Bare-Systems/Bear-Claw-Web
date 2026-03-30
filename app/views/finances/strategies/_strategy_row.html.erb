@@ -1,0 +1,24 @@
+<tr id="strategy_<%= strategy["id"] %>" class="hover:bg-gray-800/40">
+  <td class="px-4 py-3 font-mono text-sky-300 text-xs"><%= strategy["id"] %></td>
+  <td class="px-4 py-3 text-gray-300"><%= strategy["strategy_type"] || strategy["type"] %></td>
+  <td class="px-4 py-3 font-mono font-semibold text-white"><%= strategy["symbol"] %></td>
+  <td class="px-4 py-3 text-right text-gray-300 font-mono"><%= strategy["qty"] %></td>
+  <td class="px-4 py-3">
+    <% paused = strategy["paused"] || strategy["status"] == "paused" %>
+    <span class="text-xs px-2 py-0.5 rounded-full <%= paused ? 'bg-yellow-900/60 text-yellow-300' : 'bg-green-900/60 text-green-300' %>">
+      <%= paused ? "paused" : "active" %>
+    </span>
+  </td>
+  <td class="px-4 py-3">
+    <% paused = strategy["paused"] || strategy["status"] == "paused" %>
+    <% if paused %>
+      <%= button_to "Resume", resume_finances_strategy_path(strategy["id"]),
+            method: :post,
+            class: "text-xs px-3 py-1 rounded bg-green-700 hover:bg-green-600 text-white" %>
+    <% else %>
+      <%= button_to "Pause", pause_finances_strategy_path(strategy["id"]),
+            method: :post,
+            class: "text-xs px-3 py-1 rounded bg-yellow-700 hover:bg-yellow-600 text-white" %>
+    <% end %>
+  </td>
+</tr>

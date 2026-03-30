@@ -10,10 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_20_165000) do
-  # These are extensions that must be enabled in order to support this database
-  enable_extension "pg_catalog.plpgsql"
-
+ActiveRecord::Schema[8.0].define(version: 2026_03_24_000002) do
   create_table "dashboard_tiles", force: :cascade do |t|
     t.bigint "dashboard_id", null: false
     t.string "title"
@@ -79,10 +76,31 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_20_165000) do
     t.json "metadata"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id"
     t.index ["key"], name: "index_devices_on_key", unique: true
     t.index ["parent_device_id"], name: "index_devices_on_parent_device_id"
     t.index ["service_connection_id", "source_identifier"], name: "index_devices_on_connection_and_source_identifier", unique: true, where: "(source_identifier IS NOT NULL)"
     t.index ["service_connection_id"], name: "index_devices_on_service_connection_id"
+    t.index ["user_id"], name: "index_devices_on_user_id"
+  end
+
+  create_table "household_memberships", force: :cascade do |t|
+    t.integer "household_id", null: false
+    t.integer "user_id", null: false
+    t.string "role", default: "member", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["household_id", "user_id"], name: "index_household_memberships_on_household_id_and_user_id", unique: true
+    t.index ["household_id"], name: "index_household_memberships_on_household_id"
+    t.index ["user_id"], name: "index_household_memberships_on_user_id"
+  end
+
+  create_table "households", force: :cascade do |t|
+    t.integer "owner_id", null: false
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["owner_id"], name: "index_households_on_owner_id"
   end
 
   create_table "integrations", force: :cascade do |t|
@@ -96,6 +114,25 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_20_165000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["provider_key"], name: "index_integrations_on_provider_key", unique: true
+  end
+
+  create_table "invites", force: :cascade do |t|
+    t.integer "household_id", null: false
+    t.integer "created_by_id", null: false
+    t.integer "accepted_by_id"
+    t.string "token", null: false
+    t.string "email"
+    t.string "status", default: "pending", null: false
+    t.integer "max_uses", default: 1, null: false
+    t.integer "use_count", default: 0, null: false
+    t.datetime "expires_at"
+    t.datetime "accepted_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["accepted_by_id"], name: "index_invites_on_accepted_by_id"
+    t.index ["created_by_id"], name: "index_invites_on_created_by_id"
+    t.index ["household_id"], name: "index_invites_on_household_id"
+    t.index ["token"], name: "index_invites_on_token", unique: true
   end
 
   create_table "service_connections", force: :cascade do |t|
@@ -144,5 +181,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_20_165000) do
   add_foreign_key "device_capabilities", "devices"
   add_foreign_key "devices", "devices", column: "parent_device_id"
   add_foreign_key "devices", "service_connections"
+  add_foreign_key "devices", "users"
+  add_foreign_key "household_memberships", "households"
+  add_foreign_key "household_memberships", "users"
+  add_foreign_key "households", "users", column: "owner_id"
+  add_foreign_key "invites", "households"
+  add_foreign_key "invites", "users", column: "accepted_by_id"
+  add_foreign_key "invites", "users", column: "created_by_id"
   add_foreign_key "service_connections", "service_providers"
 end

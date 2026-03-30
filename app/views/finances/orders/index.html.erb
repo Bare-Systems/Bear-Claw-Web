@@ -1,0 +1,67 @@
+<% content_for :title, "Orders — Finances — BearClaw" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white mb-1">Orders</h1>
+      <p class="text-gray-500 text-sm">Open and recent orders.</p>
+    </div>
+    <div class="flex gap-2">
+      <%= link_to "Open only", finances_orders_path, class: "px-3 py-1.5 text-sm rounded #{params[:show_all] != '1' ? 'bg-blue-700 text-white' : 'bg-gray-800 text-gray-300'}" %>
+      <%= link_to "All orders", finances_orders_path(show_all: 1), class: "px-3 py-1.5 text-sm rounded #{params[:show_all] == '1' ? 'bg-blue-700 text-white' : 'bg-gray-800 text-gray-300'}" %>
+    </div>
+  </div>
+
+  <% if @error %>
+    <div class="bg-red-900/40 border border-red-800 text-red-300 rounded-xl p-4 text-sm">
+      <%= @error %>
+    </div>
+  <% else %>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <% if Array(@orders).any? %>
+        <table class="w-full text-sm">
+          <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+            <tr>
+              <th class="px-4 py-3 text-left font-medium">ID</th>
+              <th class="px-4 py-3 text-left font-medium">Symbol</th>
+              <th class="px-4 py-3 text-left font-medium">Side</th>
+              <th class="px-4 py-3 text-right font-medium">Qty</th>
+              <th class="px-4 py-3 text-right font-medium">Price</th>
+              <th class="px-4 py-3 text-left font-medium">Status</th>
+              <th class="px-4 py-3 text-left font-medium">Created</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800">
+            <% Array(@orders).each do |order| %>
+              <tr id="order_<%= order["id"] %>" class="hover:bg-gray-800/40">
+                <td class="px-4 py-3 font-mono text-xs text-sky-300"><%= order["id"]&.first(8) %>…</td>
+                <td class="px-4 py-3 font-mono font-semibold text-white"><%= order["symbol"] %></td>
+                <td class="px-4 py-3">
+                  <span class="text-xs px-2 py-0.5 rounded-full <%= order["side"] == "buy" ? 'bg-green-900/60 text-green-300' : 'bg-red-900/60 text-red-300' %>">
+                    <%= order["side"] %>
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right text-gray-300 font-mono"><%= order["qty"] %></td>
+                <td class="px-4 py-3 text-right text-gray-300 font-mono"><%= number_to_currency(order["limit_price"] || order["price"]) rescue "-" %></td>
+                <td class="px-4 py-3 text-gray-400 text-xs"><%= order["status"] %></td>
+                <td class="px-4 py-3 text-gray-500 text-xs"><%= order["created_at"] %></td>
+                <td class="px-4 py-3">
+                  <% if %w[new partially_filled accepted pending_new accepted_for_bidding].include?(order["status"]) %>
+                    <%= button_to "Cancel",
+                          finances_order_path(order["id"]),
+                          method: :delete,
+                          data: { turbo_confirm: "Cancel order for #{order["qty"]} #{order["symbol"]}?" },
+                          class: "text-xs px-2 py-1 rounded bg-red-900/60 hover:bg-red-800 text-red-300" %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <div class="px-5 py-8 text-center text-gray-500 text-sm">No orders.</div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

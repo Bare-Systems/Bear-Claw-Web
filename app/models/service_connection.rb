@@ -1,5 +1,5 @@
 class ServiceConnection < ApplicationRecord
-  ADAPTERS = %w[koala polar govee custom].freeze
+  ADAPTERS = %w[koala polar govee kodiak ursa custom].freeze
   STATUSES = %w[online degraded offline error unknown].freeze
 
   belongs_to :service_provider
