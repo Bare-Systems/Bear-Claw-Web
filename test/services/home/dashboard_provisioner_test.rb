@@ -153,7 +153,7 @@ class Home::DashboardProvisionerTest < ActiveSupport::TestCase
       adapter: "ursa",
       credential_strategy: "environment",
       status: "online",
-      base_url: "http://192.168.86.53:18080"
+      base_url: "http://192.168.86.53:6707"
     )
     overview_device = Device.create!(
       service_connection: ursa_connection,

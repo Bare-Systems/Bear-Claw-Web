@@ -97,7 +97,7 @@ class BearClawClient
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl      = uri.scheme == "https"
     http.open_timeout = 10
-    http.read_timeout = 60 # BearClaw agent has a 30s execution timeout
+    http.read_timeout = 150 # BearClaw agent has a 120s execution timeout (CPU-inference headroom)
 
     request = http_class.new(uri)
     request["Accept"]          = "application/json"

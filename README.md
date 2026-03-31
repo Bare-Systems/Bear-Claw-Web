@@ -17,7 +17,7 @@ The working `blink` topology is:
 - BearClaw container host: `192.168.86.53`
 - Koala API for Home pages: `http://192.168.86.53:8082`
 - Polar API for Home climate pages: `http://192.168.86.53:6702`
-- Ursa admin API for Security pages: `http://192.168.86.53:18080`
+- Ursa control plane for Security pages: `http://192.168.86.53:6707`
 
 Do not change those boundaries casually:
 
@@ -33,14 +33,14 @@ Do not change those boundaries casually:
 
 - `BearClawWeb` is the UI layer.
 - `Ursa major/server.py` is the C2 runtime for implants.
-- `Ursa major.web` is the BearClaw-facing admin API and experience facade over
-  the Ursa datastore.
+- `Ursa major.web` is the BearClaw-facing control-plane service over the Ursa
+  datastore. It serves both REST and MCP on the same published port.
 - `Koala` is the Home-camera API and snapshot service.
 - `Polar` is the Home climate and environmental telemetry API.
 
 BearClawWeb does not talk directly to the Ursa C2 listener for Security pages.
-It depends on the bearer-authenticated JSON API exposed by `major.web` under
-`/api/v1/*`.
+It depends on the bearer-authenticated control-plane API exposed by `major.web`
+under `/api/v1/*`. Agent clients can use the same service under `/mcp`.
 
 ## Configuration
 
@@ -51,11 +51,11 @@ Required env vars for the Security module:
 `URSA_TOKEN` must match `major.web.auth.api_token` in Ursa.
 
 When BearClawWeb runs in Docker on the homelab host, `URSA_URL` must point at
-the host-published Ursa admin API address, not the host loopback device from
+the host-published Ursa control-plane address, not the host loopback device from
 inside the container. The current homelab deployment expects:
 
 ```env
-URSA_URL=http://192.168.86.53:18080
+URSA_URL=http://192.168.86.53:6707
 ```
 
 Home pages follow the same rule for Koala:
@@ -95,9 +95,9 @@ After a deploy on `blink`, the minimum network checks are:
 
 ```bash
 curl -sS http://192.168.86.53:8082/healthz
-curl -sS http://192.168.86.53:18080/healthz
+curl -sS http://192.168.86.53:6707/healthz
 docker exec bearclaw-web ruby -rnet/http -e 'print Net::HTTP.get_response(URI("http://192.168.86.53:8082/healthz")).code'
-docker exec bearclaw-web ruby -rnet/http -e 'print Net::HTTP.get_response(URI("http://192.168.86.53:18080/healthz")).code'
+docker exec bearclaw-web ruby -rnet/http -e 'print Net::HTTP.get_response(URI("http://192.168.86.53:6707/healthz")).code'
 ```
 
 ## Tests

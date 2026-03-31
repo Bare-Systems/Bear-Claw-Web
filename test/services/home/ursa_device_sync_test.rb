@@ -57,7 +57,7 @@ class Home::UrsaDeviceSyncTest < ActiveSupport::TestCase
     fake.define_singleton_method(:get_json) { |*| raise UrsaClient::RequestError.new("timeout", status: 504, body: "") }
 
     assert_raises(UrsaClient::RequestError) do
-      Home::UrsaDeviceSync.new(client: fake, base_url: "http://192.168.86.53:18080", user: @user).sync!
+      Home::UrsaDeviceSync.new(client: fake, base_url: "http://192.168.86.53:6707", user: @user).sync!
     end
 
     connection = ServiceConnection.find_by!(key: "ursa")
@@ -83,7 +83,7 @@ class Home::UrsaDeviceSyncTest < ActiveSupport::TestCase
 
     Home::UrsaDeviceSync.new(
       client:   fake,
-      base_url: "http://192.168.86.53:18080",
+      base_url: "http://192.168.86.53:6707",
       user:     @user
     ).sync!
   end
