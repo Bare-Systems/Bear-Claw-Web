@@ -57,7 +57,7 @@ group :development do
 end
 
 group :test do
-  gem "minitest", "< 6"
+  gem "minitest", "< 7"
   gem "sqlite3", ">= 1.4"
 
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
