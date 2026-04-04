@@ -15,6 +15,7 @@ This file documents the real behavior of [`blink.toml`](/Users/joecaruso/Project
 - Transport artifact: `dist/.pushed`
 - Deploy pipeline: `fetch_artifact`, `provision`, `remote_script`, `stop`, `start`, `health_check`, `verify`
 - Runtime shape: container bound to `127.0.0.1:3001`, proxied by Tardigrade
+- Runtime DNS: container uses Docker's default resolver configuration; BearClaw no longer pins container DNS to `192.168.86.53`
 - Provisioning seeds the runtime env file on first deploy and creates runtime directories
 - Remote script provisions Postgres and the Tardigrade vhost
 
@@ -35,6 +36,7 @@ The manifest verifies:
 - container-to-service reachability for Koala, Polar, and Ursa
 - authorized Koala MCP access from inside the container
 - BearClaw chat reachability through the public hostname
+- Google OAuth DNS resolution from inside the container
 
 ## Operator Notes
 

@@ -98,6 +98,7 @@ curl -sS http://192.168.86.53:8082/healthz
 curl -sS http://192.168.86.53:6707/healthz
 docker exec bearclaw-web ruby -rnet/http -e 'print Net::HTTP.get_response(URI("http://192.168.86.53:8082/healthz")).code'
 docker exec bearclaw-web ruby -rnet/http -e 'print Net::HTTP.get_response(URI("http://192.168.86.53:6707/healthz")).code'
+docker exec bearclaw-web ruby -rsocket -e 'Socket.getaddrinfo("oauth2.googleapis.com", 443); print "ok"'
 ```
 
 ## Tests

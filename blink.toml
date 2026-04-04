@@ -120,7 +120,7 @@ command = "docker stop {{service_name}} 2>/dev/null || true && docker rm {{servi
 # ── Start: load the image tar and run the container ──────────────────────────
 
 [services.bearclaw-web.start]
-command = "docker pull registry.home:5000/bearclaw-web:latest && docker tag registry.home:5000/bearclaw-web:latest {{image_name}} && docker run -d --name {{service_name}} --restart unless-stopped -p 127.0.0.1:{{port}}:80 --dns 192.168.86.53 --add-host bearclaw.baresystems.com:192.168.86.53 --env-file {{runtime_dir}}/bearclaw-web.env {{image_name}}"
+command = "docker pull registry.home:5000/bearclaw-web:latest && docker tag registry.home:5000/bearclaw-web:latest {{image_name}} && docker run -d --name {{service_name}} --restart unless-stopped -p 127.0.0.1:{{port}}:80 --add-host bearclaw.baresystems.com:192.168.86.53 --env-file {{runtime_dir}}/bearclaw-web.env {{image_name}}"
 
 # ── Health check ──────────────────────────────────────────────────────────────
 
@@ -204,6 +204,12 @@ tags          = ["health"]
 type          = "shell"
 command       = '''docker exec {{service_name}} ruby -rnet/http -rjson -e 'uri = URI("https://bearclaw.baresystems.com/v1/chat"); req = Net::HTTP::Post.new(uri); req["Authorization"] = "Bearer #{ENV.fetch("BEARCLAW_TOKEN")}"; req["Content-Type"] = "application/json"; req.body = JSON.dump({ message: "blink health check" }); http = Net::HTTP.new(uri.host, uri.port); http.use_ssl = true; res = http.request(req); abort(res.code) unless res.code == "200"; print res.code' '''
 expect_output = "200"
+tags          = ["health"]
+
+[services.bearclaw-web.verify.tests.google-oauth-dns-from-container]
+type          = "shell"
+command       = '''docker exec {{service_name}} ruby -rsocket -e 'Socket.getaddrinfo("oauth2.googleapis.com", 443); print "ok"' '''
+expect_output = "ok"
 tags          = ["health"]
 
 [services.bearclaw-web.verify.tests.rails-test-suite]
