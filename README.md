@@ -15,7 +15,7 @@ The working `blink` topology is:
 - Public TLS entrypoint: Tardigrade on `https://bearclaw.baresystems.com`
 - Tardigrade upstream for BearClaw: `http://127.0.0.1:3001`
 - BearClaw container host: `192.168.86.53`
-- Koala API for Home pages: `http://192.168.86.53:8082`
+- Koala API for Home pages: `http://192.168.86.53:6705`
 - Polar API for Home climate pages: `http://192.168.86.53:6702`
 - Ursa control plane for Security pages: `http://192.168.86.53:6707`
 

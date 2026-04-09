@@ -14,5 +14,3 @@ bundle exec rails test
 - Update `BLINK.md` when the build, deploy, or verification contract changes.
 - Update `SECURITY.md` for auth, token, or secret-handling changes.
 - Update `CHANGELOG.md` for notable repo changes.
-
-Active roadmap work belongs in the workspace root `ROADMAP.md`.

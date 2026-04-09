@@ -11,6 +11,23 @@ suite/
 blink/
 .blink/
 blink
+deploy/
+dist/
+
+# Agent Context
+changes/
+.cursor/
+AGENTS.md
+PLAN.md
+CLAUDE.md
+.claude/worktrees/
+ROADMAP.md
+PORTFOLIO.md
+CONTEXTS.md
+deploy/
+PLAN-TEST*.md
+PLAN*.md
+ISSUES.md
 
 # Ignore all environment files.
 /.env*
@@ -41,5 +58,3 @@ blink
 /app/assets/builds/*
 !/app/assets/builds/.keep
 
-# Blink deploy artifacts
-/dist
