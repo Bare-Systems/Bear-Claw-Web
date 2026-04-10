@@ -14,7 +14,7 @@ This file documents the real behavior of [`blink.toml`](/Users/joecaruso/Project
 - Build: Docker image is built locally for `linux/amd64`, tagged, and pushed to `registry.home:5000`
 - Transport artifact: `dist/.pushed`
 - Deploy pipeline: `fetch_artifact`, `provision`, `remote_script`, `stop`, `start`, `health_check`, `verify`
-- Runtime shape: container bound to `127.0.0.1:3001`, proxied by Tardigrade
+- Runtime shape: container bound to `127.0.0.1:6701`, proxied by Tardigrade
 - Runtime DNS: container uses Docker's default resolver configuration; BearClaw no longer pins container DNS to `192.168.86.53`
 - Provisioning seeds the runtime env file on first deploy and creates runtime directories
 - Remote script provisions Postgres and the Tardigrade vhost
@@ -40,6 +40,6 @@ The manifest verifies:
 
 ## Operator Notes
 
-- Keep BearClawWeb loopback-only on `127.0.0.1:3001`.
+- Keep BearClawWeb loopback-only on `127.0.0.1:6701`.
 - Do not use host loopback for Koala, Polar, or Ursa from inside the container.
 - Update this file whenever env seeding, image transport, verification coverage, or network assumptions change.

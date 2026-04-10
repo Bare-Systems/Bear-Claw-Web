@@ -10,7 +10,7 @@ user         = "admin"
 base         = "/home/admin/baresystems"
 runtime_dir  = "/home/admin/baresystems/runtime/bearclaw-web"
 publish_host = "192.168.86.53"
-port         = "3001"
+port         = "6701"
 image_name   = "bearclaw-web:local"
 
 [targets.local]
@@ -20,7 +20,7 @@ db_url = "postgres://bearclaw_web:bear_claw_web_prod@192.168.86.53:5432/bear_cla
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # bearclaw-web — Rails 8 role-based ops dashboard for Bare Systems
-# Port:    3001 (loopback only — proxied by Tardigrade → bearclaw.home)
+# Port:    6701 (loopback only — proxied by Tardigrade → bearclaw.home)
 # Vhost:   https://bearclaw.home (wildcard TLS via Tardigrade)
 # DB:      bearclaw-postgres container (postgres:16) on blink
 # Network contract:
@@ -32,7 +32,7 @@ db_url = "postgres://bearclaw_web:bear_claw_web_prod@192.168.86.53:5432/bear_cla
 
 [services.bearclaw-web]
 description  = "BearClaw Web - role-based ops dashboard for Bare Systems"
-port         = "3001"
+port         = "6701"
 service_name = "bearclaw-web"
 
 # ── Source: build the deployment image locally and push to the registry ───────
@@ -149,7 +149,7 @@ tags          = ["health"]
 [services.bearclaw-web.verify.tests.port-published]
 type          = "shell"
 command       = "docker ps --filter name=^/{{service_name}}$ --format '{{.Ports}}'"
-expect_output = "/127\\.0\\.0\\.1:3001->80\\/tcp/"
+expect_output = "/127\\.0\\.0\\.1:6701->80\\/tcp/"
 tags          = ["health"]
 
 [services.bearclaw-web.verify.tests.koala-host-health]

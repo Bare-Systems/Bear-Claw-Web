@@ -58,13 +58,13 @@ Rails.application.configure do
   config.active_record.attributes_for_inspect = [ :id ]
 
   # Allow requests via the domain and LAN IP (served through Tardigrade on port 443).
-  # 127.0.0.1:3001 is included because Tardigrade does not forward the original Host
+  # 127.0.0.1:6701 is included because Tardigrade does not forward the original Host
   # header to the upstream — it auto-sets Host to the proxy target address.
   # The Rails container is only reachable from localhost so this is safe.
   config.hosts = [
     "bearclaw.baresystems.com",
     "192.168.86.53",
-    "127.0.0.1:3001"
+    "127.0.0.1:6701"
   ]
 
   # Allow health checks from blink itself without a Host header match.
