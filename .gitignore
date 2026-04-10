@@ -11,6 +11,8 @@ suite/
 blink/
 .blink/
 blink
+/blink.toml
+/BLINK.md
 deploy/
 dist/
 
@@ -57,4 +59,3 @@ ISSUES.md
 
 /app/assets/builds/*
 !/app/assets/builds/.keep
-

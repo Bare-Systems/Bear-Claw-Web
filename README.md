@@ -13,15 +13,15 @@ for:
 The working `blink` topology is:
 
 - Public TLS entrypoint: Tardigrade on `https://bearclaw.baresystems.com`
-- Tardigrade upstream for BearClaw: `http://127.0.0.1:3001`
+- Tardigrade upstream for BearClaw: `http://127.0.0.1:6701`
 - BearClaw container host: `192.168.86.53`
-- Koala API for Home pages: `http://192.168.86.53:6705`
-- Polar API for Home climate pages: `http://192.168.86.53:6702`
+- Koala API for Home pages: `http://192.168.86.53:8082`
+- Polar API for Home climate pages: `http://192.168.86.53:6703`
 - Ursa control plane for Security pages: `http://192.168.86.53:6707`
 
 Do not change those boundaries casually:
 
-- BearClaw itself stays loopback-only on the host. Do not expose `3001` on the
+- BearClaw itself stays loopback-only on the host. Do not expose `6701` on the
   LAN to make the site work.
 - BearClaw runs in Docker, so host services must be reached through the host IP.
   Do not use `127.0.0.1` inside the BearClaw container for Koala or Ursa.
@@ -67,7 +67,7 @@ KOALA_URL=http://192.168.86.53:8082
 Polar-backed Home climate widgets follow the same rule:
 
 ```env
-POLAR_URL=http://192.168.86.53:6702
+POLAR_URL=http://192.168.86.53:6703
 POLAR_TOKEN=<polar service token>
 ```
 

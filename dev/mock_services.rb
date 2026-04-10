@@ -6,7 +6,7 @@
 #
 # Ports (match the defaults in .env):
 #   Koala  → 8082
-#   Polar  → 6702
+#   Polar  → 6703
 #   Ursa   → 6707
 #
 # Usage: added to Procfile.dev as `mocks: ruby dev/mock_services.rb`
@@ -217,10 +217,10 @@ koala_thread = Thread.new do
   end
 end
 
-# ── Polar mock (port 6702) ───────────────────────────────────────────────────
+# ── Polar mock (port 6703) ───────────────────────────────────────────────────
 
 polar_thread = Thread.new do
-  serve(6702, "Polar") do |req, client|
+  serve(6703, "Polar") do |req, client|
     case [req[:method], req[:path]]
     in ["GET", "/healthz"]
       json_resp(client, { status: "ok" })

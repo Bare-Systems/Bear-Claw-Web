@@ -28,7 +28,7 @@ class Home::PolarDeviceSyncTest < ActiveSupport::TestCase
 
     Home::PolarDeviceSync.new(
       client:   fake_client,
-      base_url: "http://192.168.86.53:6702",
+      base_url: "http://192.168.86.53:6703",
       user:     @user
     ).sync!
 
@@ -62,7 +62,7 @@ class Home::PolarDeviceSyncTest < ActiveSupport::TestCase
     fake.define_singleton_method(:station_health) { {} }
 
     assert_raises(PolarClient::RequestError) do
-      Home::PolarDeviceSync.new(client: fake, base_url: "http://192.168.86.53:6702", user: @user).sync!
+      Home::PolarDeviceSync.new(client: fake, base_url: "http://192.168.86.53:6703", user: @user).sync!
     end
 
     assert_equal "error", ServiceConnection.find_by!(key: "polar").status
@@ -70,8 +70,8 @@ class Home::PolarDeviceSyncTest < ActiveSupport::TestCase
 
   test "sync is idempotent" do
     fake = make_fake_client
-    Home::PolarDeviceSync.new(client: fake, base_url: "http://192.168.86.53:6702", user: @user).sync!
-    Home::PolarDeviceSync.new(client: fake, base_url: "http://192.168.86.53:6702", user: @user).sync!
+    Home::PolarDeviceSync.new(client: fake, base_url: "http://192.168.86.53:6703", user: @user).sync!
+    Home::PolarDeviceSync.new(client: fake, base_url: "http://192.168.86.53:6703", user: @user).sync!
 
     assert_equal 1, ServiceProvider.where(key: "polar").count
     assert_equal 1, ServiceConnection.where(key: "polar").count
