@@ -12,13 +12,7 @@ import { Controller } from "@hotwired/stimulus"
 // The controller also updates the panel header (logo badge + title) from the
 // ProviderRegistry metadata embedded in the template's data attributes.
 
-export default class extends Controller {
-  static targets = ["panel", "backdrop", "body", "title", "logobadge", "createForm", "updateForm"]
-
-  // Provider metadata baked into the page at render time so we can update
-  // the panel header without another round-trip.
-  static PROVIDERS = null
-
+class IntegrationPanelController extends Controller {
   connect() {
     // Build a lookup from the hidden <template> elements present in the DOM.
     this._providerMeta = {}
@@ -28,12 +22,13 @@ export default class extends Controller {
       const card = this.element.querySelector(
         `[data-integration-panel-key-param="${key}"], [data-action*="integration-panel#open"][data-integration-panel-key-param="${key}"]`
       )
-      const badge = card?.closest("article")?.querySelector("[style*='background-color']")
+      const article = card ? card.closest("article") : null
+      const badge = article ? article.querySelector("[style*='background-color']") : null
       this._providerMeta[key] = {
         template:    tpl,
-        bgColor:     badge?.style.backgroundColor || "#6B7280",
-        textColor:   badge?.style.color            || "#f9fafb",
-        letter:      badge?.textContent?.trim()    || "?",
+        bgColor:     badge ? badge.style.backgroundColor : "#6B7280",
+        textColor:   badge ? badge.style.color : "#f9fafb",
+        letter:      badge ? badge.textContent.trim() : "?",
       }
     })
   }
@@ -100,3 +95,8 @@ export default class extends Controller {
     if (event.key === "Escape") this.close()
   }
 }
+
+IntegrationPanelController.targets = ["panel", "backdrop", "body", "title", "logobadge", "createForm", "updateForm"]
+IntegrationPanelController.PROVIDERS = null
+
+export default IntegrationPanelController

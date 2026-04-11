@@ -26,6 +26,6 @@
       <p class="text-3xl font-semibold <%= value_color %>"><%= primary_value %></p>
       <p class="mt-1 text-sm text-gray-500"><%= primary_unit || "No sensor reading yet" %></p>
     </div>
-    <p class="text-xs text-gray-500"><%= state["last_seen_at"].presence || "Awaiting sync" %></p>
+    <%= render "home/widgets/health_meta", widget: widget %>
   </div>
 </section>

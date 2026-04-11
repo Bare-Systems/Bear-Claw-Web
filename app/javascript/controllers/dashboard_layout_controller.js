@@ -1,15 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
-export default class extends Controller {
-  static targets = ["item"]
-  static values = {
-    columns: { type: Number, default: 4 },
-    maxHeight: { type: Number, default: 3 },
-    editingClass: String,
-    draggingClass: String,
-  }
-
+class DashboardLayoutController extends Controller {
   connect() {
+    this.element.dataset.dashboardLayoutReady = "true"
     this.onPointerMove = this.onPointerMove.bind(this)
     this.onPointerUp = this.onPointerUp.bind(this)
     this.activeInteraction = null
@@ -38,7 +31,7 @@ export default class extends Controller {
 
     const firstTile = this.itemTargets[0]
     const firstHeight = firstTile ? firstTile.getBoundingClientRect().height : 256
-    const rowSpan = Number(firstTile?.dataset.height || 1)
+    const rowSpan = Number((firstTile && firstTile.dataset.height) || 1)
     const rowHeight = firstHeight / Math.max(rowSpan, 1)
     const rect = this.element.getBoundingClientRect()
     const cellWidth = rect.width / this.columnsValue
@@ -104,7 +97,8 @@ export default class extends Controller {
   }
 
   async persistLayout(tile, preview) {
-    const csrf = document.querySelector("meta[name='csrf-token']")?.content
+    const csrfElement = document.querySelector("meta[name='csrf-token']")
+    const csrf = csrfElement ? csrfElement.content : null
 
     try {
       const response = await fetch(tile.dataset.updateUrl, {
@@ -304,3 +298,13 @@ export default class extends Controller {
     return Math.min(Math.max(height, 1), this.maxHeightValue)
   }
 }
+
+DashboardLayoutController.targets = ["item"]
+DashboardLayoutController.values = {
+  columns: { type: Number, default: 4 },
+  maxHeight: { type: Number, default: 6 },
+  editingClass: String,
+  draggingClass: String,
+}
+
+export default DashboardLayoutController

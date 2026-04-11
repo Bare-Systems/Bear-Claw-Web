@@ -1,14 +1,25 @@
 require "test_helper"
+require "securerandom"
 
 class Home::DashboardControllerTest < ActionController::TestCase
   tests Home::DashboardController
 
   setup do
-    @user = User.find_by!(email: users(:one)["email"])
-    @user.update!(role: :operator)
+    HouseholdMembership.delete_all
+    Household.delete_all
+
+    token = SecureRandom.hex(6)
+    @provider_key = "koala-#{token}"
+    @connection_key = "koala-main-#{token}"
+    @user = User.create!(
+      email: "dashboard-controller-#{token}@example.com",
+      google_uid: "dashboard-controller-#{token}",
+      name: "Dashboard Controller #{token}",
+      role: :operator
+    )
     @request.session[:user_id] = @user.id
 
-    @household = Household.create!(name: "Test Home", owner: @user)
+    @household = Household.create!(name: "Test Home #{token}", owner: @user)
     HouseholdMembership.create!(household: @household, user: @user)
 
     seed_camera_capabilities(8)
@@ -31,16 +42,22 @@ class Home::DashboardControllerTest < ActionController::TestCase
 
   test "home index seeds exactly one dashboard with 8 tiles on first visit" do
     get :index
-    assert_equal 1, ServiceProvider.count
-    assert_equal 1, ServiceConnection.count
-    assert_equal 8, DashboardTile.count
-    assert_equal 8, DashboardWidget.count
+
+    dashboard = Dashboard.find_by!(user: @user, context: "home", name: "Home Dashboard")
+
+    assert_equal 1, ServiceProvider.where(key: @provider_key).count
+    assert_equal 1, ServiceConnection.where(key: @connection_key).count
+    assert_equal 8, dashboard.dashboard_tiles.count
+    assert_equal 8, dashboard.dashboard_widgets.count
   end
 
   test "home index re-visiting does not duplicate tiles" do
     get :index
     get :index
-    assert_equal 8, DashboardTile.count
+
+    dashboard = Dashboard.find_by!(user: @user, context: "home", name: "Home Dashboard")
+
+    assert_equal 8, dashboard.dashboard_tiles.count
   end
 
   test "edit mode renders dashboard editor" do
@@ -48,9 +65,13 @@ class Home::DashboardControllerTest < ActionController::TestCase
     assert_response :success
     assert_match "Add Tile",                          @response.body
     assert_match "Add Widget",                        @response.body
+    assert_match "Search Capabilities",               @response.body
+    assert_match "Capability Type",                   @response.body
+    assert_match "Selected Capability",               @response.body
     assert_match "Service Providers",                 @response.body
     assert_match "Devices and Capabilities",          @response.body
     assert_match "data-controller=\"dashboard-layout\"", @response.body
+    assert_match "data-controller=\"widget-picker\"", @response.body
     assert_match "Drag a tile header",                @response.body
   end
 
@@ -167,8 +188,13 @@ class Home::DashboardControllerTest < ActionController::TestCase
   end
 
   test "non-household-member is denied" do
-    other = User.find_by!(email: users(:two)["email"])
-    other.update!(role: :operator)
+    token = SecureRandom.hex(6)
+    other = User.create!(
+      email: "dashboard-controller-other-#{token}@example.com",
+      google_uid: "dashboard-controller-other-#{token}",
+      name: "Dashboard Controller Other #{token}",
+      role: :operator
+    )
     @request.session[:user_id] = other.id
     get :index
     assert_redirected_to login_path
@@ -179,9 +205,9 @@ class Home::DashboardControllerTest < ActionController::TestCase
   # ── Data helpers ───────────────────────────────────────────────────────────
 
   def seed_camera_capabilities(count)
-    provider = ServiceProvider.create!(key: "koala", name: "Koala", provider_type: "hybrid")
+    provider = ServiceProvider.create!(key: @provider_key, name: "Koala", provider_type: "hybrid")
     connection = ServiceConnection.create!(
-      service_provider: provider, key: "koala-main", name: "Koala Main",
+      service_provider: provider, key: @connection_key, name: "Koala Main",
       adapter: "koala", credential_strategy: "environment",
       status: "online", base_url: "http://192.168.86.53:8082"
     )

@@ -14,10 +14,15 @@ module Home
       sync_ursa_inventory   if current_user.admin?
 
       provisioner = Home::DashboardProvisioner.new(user: current_home.owner)
-      @dashboards = provisioner.all_dashboards
+      @dashboards = provisioner.all_dashboards.map { |dashboard| upgrade_dashboard_density!(dashboard) }
       @dashboard  = provisioner.dashboard_named(params[:dashboard]) || @dashboards.first
+      @dashboard  = upgrade_dashboard_density!(@dashboard)
       @dashboard  = Dashboard.includes(dashboard_tiles: { dashboard_widgets: { device_capability: :device } }).find(@dashboard.id)
-      @available_capabilities = DeviceCapability.joins(:device).includes(:device).where(devices: { user_id: current_home.owner_id }).order("devices.name ASC", "device_capabilities.name ASC")
+      @available_capabilities = DeviceCapability
+        .joins(:device)
+        .includes(device: { service_connection: :service_provider })
+        .where(devices: { user_id: current_home.owner_id })
+        .order("devices.name ASC", "device_capabilities.name ASC")
       @service_providers = ServiceProvider.includes(service_connections: { devices: :device_capabilities }).order(:name)
       @service_connections = ServiceConnection.includes(:service_provider).order(:name)
       @devices = Device.for_home(current_home).includes(:service_connection, :device_capabilities).order(:name)
@@ -101,6 +106,10 @@ module Home
         token: ENV["URSA_TOKEN"],
         actor: "bearclaw-dashboard"
       )
+    end
+
+    def upgrade_dashboard_density!(dashboard)
+      Home::DashboardDensityUpgrader.new(dashboard: dashboard).upgrade!
     end
   end
 end

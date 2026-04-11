@@ -7,7 +7,7 @@ Rails.application.routes.draw do
   get  "/auth/:provider/callback",  to: "sessions#create"
   get  "/auth/failure",             to: "sessions#failure"
   get  "/invites/:token/accept",    to: "sessions#accept_invite", as: :accept_invite
-  get  "/dev/login",                to: "sessions#dev_login", as: :dev_login if Rails.env.development?
+  get  "/dev/login",                to: "sessions#dev_login", as: :dev_login if Rails.env.development? || Rails.env.test?
 
   # Agent module — BearClaw chat, cron, memory
   namespace :agent do
@@ -83,7 +83,18 @@ Rails.application.routes.draw do
       end
     end
     resources :dashboard_tiles, path: "dashboard/tiles", only: [ :create, :update, :destroy ] do
+      collection do
+        post :apply_pack
+      end
       resources :dashboard_widgets, path: "widgets", only: [ :create ]
+    end
+    resources :dashboard_layout_presets, path: "dashboard/layout_presets", only: [ :create, :destroy ], param: :name do
+      collection do
+        post :apply
+      end
+    end
+    resource :dashboard_layout_history, path: "dashboard/layout_history", only: [], controller: :dashboard_layout_history do
+      post :undo
     end
     resources :dashboard_widgets, path: "dashboard/widgets", only: [ :update, :destroy ]
     resources :cameras,  only: [ :index, :show ] do

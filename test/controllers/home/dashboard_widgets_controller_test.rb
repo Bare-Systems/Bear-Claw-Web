@@ -1,17 +1,23 @@
 require "test_helper"
+require "securerandom"
 
 class Home::DashboardWidgetsControllerTest < ActionController::TestCase
   tests Home::DashboardWidgetsController
 
   setup do
-    @user = User.find_by!(email: users(:one)["email"])
-    @user.update!(role: :operator)
+    token = SecureRandom.hex(6)
+    @user = User.create!(
+      email: "dashboard-widgets-#{token}@example.com",
+      google_uid: "dashboard-widgets-#{token}",
+      name: "Dashboard Widgets #{token}",
+      role: :operator
+    )
     @request.session[:user_id] = @user.id
 
-    provider = ServiceProvider.create!(key: "koala", name: "Koala", provider_type: "hybrid")
+    provider = ServiceProvider.create!(key: "koala-#{token}", name: "Koala", provider_type: "hybrid")
     connection = ServiceConnection.create!(
       service_provider: provider,
-      key: "koala-main",
+      key: "koala-main-#{token}",
       name: "Koala Main",
       adapter: "koala",
       credential_strategy: "environment",
@@ -20,6 +26,7 @@ class Home::DashboardWidgetsControllerTest < ActionController::TestCase
     )
     device = Device.create!(
       service_connection: connection,
+      user: @user,
       key: "koala-camera-cam_1",
       name: "CAM 1",
       category: "camera",
@@ -56,5 +63,57 @@ class Home::DashboardWidgetsControllerTest < ActionController::TestCase
     assert_redirected_to home_root_path(edit: 1)
     assert_equal "camera_feed", widget.widget_type
     assert_equal 6, widget.refresh_interval_seconds
+  end
+
+  test "creates a widget with an explicit valid widget type" do
+    assert_difference("DashboardWidget.count", 1) do
+      post :create, params: {
+        dashboard_tile_id: @tile.id,
+        dashboard_widget: {
+          device_capability_id: @capability.id,
+          widget_type: "status_badge",
+          title: "Front Door Status"
+        }
+      }
+    end
+
+    widget = DashboardWidget.order(:id).last
+
+    assert_redirected_to home_root_path(edit: 1)
+    assert_equal "status_badge", widget.widget_type
+  end
+
+  test "falls back to the capability default widget type when none is selected" do
+    assert_difference("DashboardWidget.count", 1) do
+      post :create, params: {
+        dashboard_tile_id: @tile.id,
+        dashboard_widget: {
+          device_capability_id: @capability.id,
+          widget_type: "",
+          title: "Front Door Default"
+        }
+      }
+    end
+
+    widget = DashboardWidget.order(:id).last
+
+    assert_redirected_to home_root_path(edit: 1)
+    assert_equal @capability.default_widget_type, widget.widget_type
+  end
+
+  test "rejects an invalid capability and widget type combination" do
+    assert_no_difference("DashboardWidget.count") do
+      post :create, params: {
+        dashboard_tile_id: @tile.id,
+        dashboard_widget: {
+          device_capability_id: @capability.id,
+          widget_type: "switch_control",
+          title: "Bad Widget"
+        }
+      }
+    end
+
+    assert_redirected_to home_root_path(edit: 1)
+    assert_match "is not supported", flash[:alert]
   end
 end

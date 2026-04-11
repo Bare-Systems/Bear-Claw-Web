@@ -49,14 +49,19 @@ class SessionsController < ApplicationController
   end
 
   def dev_login
-    raise ActionController::RoutingError, "Not Found" unless Rails.env.development?
+    raise ActionController::RoutingError, "Not Found" unless Rails.env.development? || Rails.env.test?
 
-    user = User.find_or_create_by!(email: "dev@bearclaw.local") do |u|
-      u.name       = "Dev Admin"
-      u.google_uid = "dev-local-admin"
-      u.role       = :admin
-      u.avatar_url = nil
+    user = if Rails.env.test? && params[:email].present?
+      User.find_by!(email: params[:email])
+    else
+      User.find_or_create_by!(email: "dev@bearclaw.local") do |u|
+        u.name       = "Dev Admin"
+        u.google_uid = "dev-local-admin"
+        u.role       = :admin
+        u.avatar_url = nil
+      end
     end
+
     session[:user_id] = user.id
     redirect_to root_path, notice: "Signed in as #{user.name} (dev)."
   end

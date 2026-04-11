@@ -33,12 +33,6 @@
 
   <div class="mt-4 flex items-center justify-between gap-3">
     <p class="min-w-0 truncate text-xs text-gray-600">Kodiak · <%= metric.humanize.presence || "Portfolio" %></p>
-    <p class="flex-shrink-0 text-xs text-gray-600">
-      <% if (ts = state["last_seen_at"].presence) %>
-        <%= time_ago_in_words(Time.parse(ts)) %> ago
-      <% else %>
-        Awaiting sync
-      <% end %>
-    </p>
+    <%= render "home/widgets/health_meta", widget: widget %>
   </div>
 </section>

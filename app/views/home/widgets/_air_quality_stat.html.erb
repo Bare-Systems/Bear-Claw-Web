@@ -41,7 +41,7 @@
   <%# ── Footer: device name · timestamp ───────────────────────────────────── %>
   <div class="mt-3 flex items-center justify-between gap-3">
     <p class="min-w-0 truncate text-xs text-gray-600"><%= widget.device&.name || "Unassigned device" %></p>
-    <p class="flex-shrink-0 text-xs text-gray-600"><%= presenter.formatted_timestamp %></p>
+    <%= render "home/widgets/health_meta", widget: widget %>
   </div>
 
 </section>

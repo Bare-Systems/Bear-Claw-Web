@@ -1,14 +1,28 @@
 require "test_helper"
+require "securerandom"
 
 class Home::DashboardProvisionerTest < ActiveSupport::TestCase
   setup do
-    @user = User.find_by!(email: users(:one)["email"])
-    @user.update!(role: :operator)
+    DashboardWidget.delete_all
+    DashboardTile.delete_all
+    Dashboard.delete_all
+    DeviceCapability.delete_all
+    Device.delete_all
+    ServiceConnection.delete_all
+    ServiceProvider.delete_all
+
+    token = SecureRandom.hex(6)
+    @user = User.create!(
+      email: "dashboard-provisioner-#{token}@example.com",
+      google_uid: "dashboard-provisioner-#{token}",
+      name: "Dashboard Provisioner #{token}",
+      role: :operator
+    )
 
     provider = ServiceProvider.create!(key: "koala", name: "Koala", provider_type: "hybrid")
     connection = ServiceConnection.create!(
       service_provider: provider,
-      key: "koala-main",
+      key: "koala-main-#{token}",
       name: "Koala Main",
       adapter: "koala",
       credential_strategy: "environment",
@@ -59,14 +73,17 @@ class Home::DashboardProvisionerTest < ActiveSupport::TestCase
     provisioner.home_dashboard
     provisioner.home_dashboard
 
-    assert_equal 8, DashboardTile.where(dashboard: Dashboard.find_by(name: "Home Dashboard")).count
+    dashboard = Dashboard.find_by!(user: @user, name: "Home Dashboard", context: "home")
+
+    assert_equal 8, DashboardTile.where(dashboard: dashboard).count
   end
 
   test "adds polar air quality tiles when dashboard is on the default 8-camera layout" do
+    token = SecureRandom.hex(4)
     polar_provider = ServiceProvider.create!(key: "polar", name: "Polar", provider_type: "network")
     polar_connection = ServiceConnection.create!(
       service_provider: polar_provider,
-      key: "polar-main",
+      key: "polar-main-#{token}",
       name: "Polar Main",
       adapter: "polar",
       credential_strategy: "environment",
@@ -101,15 +118,16 @@ class Home::DashboardProvisionerTest < ActiveSupport::TestCase
     assert_equal 3,
       dashboard.dashboard_widgets
         .joins(device_capability: { device: { service_connection: :service_provider } })
-        .where(service_providers: { key: "polar" })
+        .where(service_providers: { key: polar_provider.key })
         .count
   end
 
   test "Finances Dashboard seeds Kodiak portfolio capabilities as finance tiles" do
+    token = SecureRandom.hex(4)
     kodiak_provider = ServiceProvider.create!(key: "kodiak", name: "Kodiak", provider_type: "network")
     kodiak_connection = ServiceConnection.create!(
       service_provider: kodiak_provider,
-      key: "kodiak",
+      key: "kodiak-#{token}",
       name: "Kodiak",
       adapter: "kodiak",
       credential_strategy: "environment",
@@ -145,10 +163,11 @@ class Home::DashboardProvisionerTest < ActiveSupport::TestCase
   end
 
   test "Security Overview seeds Ursa capabilities as security_stat tiles" do
+    token = SecureRandom.hex(4)
     ursa_provider = ServiceProvider.create!(key: "ursa", name: "Ursa", provider_type: "network")
     ursa_connection = ServiceConnection.create!(
       service_provider: ursa_provider,
-      key: "ursa",
+      key: "ursa-#{token}",
       name: "Ursa",
       adapter: "ursa",
       credential_strategy: "environment",

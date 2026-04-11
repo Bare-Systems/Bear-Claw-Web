@@ -25,4 +25,9 @@ class Dashboard < ApplicationRecord
     value = settings_hash["columns"].to_i
     value.positive? ? value : 4
   end
+
+  def layout_presets
+    presets = settings_hash["layout_presets"]
+    presets.is_a?(Array) ? presets.select { |preset| preset.is_a?(Hash) } : []
+  end
 end

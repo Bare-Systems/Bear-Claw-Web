@@ -1,0 +1,8 @@
+<% health_state = dashboard_widget_health_state(widget) %>
+
+<div class="flex flex-wrap items-center gap-2">
+  <span class="rounded-full px-2 py-1 text-[11px] font-medium uppercase tracking-wide <%= dashboard_health_badge_classes(health_state) %>">
+    <%= dashboard_widget_health_label(widget) %>
+  </span>
+  <span class="text-xs text-gray-500"><%= dashboard_widget_health_detail(widget) %></span>
+</div>

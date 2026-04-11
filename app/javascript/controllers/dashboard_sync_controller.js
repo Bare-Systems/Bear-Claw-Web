@@ -15,12 +15,9 @@ import { cable } from "@hotwired/turbo-rails"
 // The first sync is intentionally deferred by 30 s because the page-load
 // action already performs a fresh sync before rendering.
 
-export default class extends Controller {
-  static targets = ["status"]
-  static values  = { interval: { type: Number, default: 30_000 } }
-
+class DashboardSyncController extends Controller {
   connect() {
-    if (!cable?.subscriptions) {
+    if (!cable || !cable.subscriptions) {
       this.setStatus("Offline")
       return
     }
@@ -33,7 +30,7 @@ export default class extends Controller {
 
   disconnect() {
     clearInterval(this.timer)
-    this.subscription?.unsubscribe()
+    if (this.subscription) this.subscription.unsubscribe()
     this.subscription = null
   }
 
@@ -52,7 +49,7 @@ export default class extends Controller {
   }
 
   requestSync() {
-    this.subscription?.perform("sync")
+    if (this.subscription) this.subscription.perform("sync")
   }
 
   handleMessage(data) {
@@ -72,3 +69,8 @@ export default class extends Controller {
     this.statusTarget.innerHTML = `<span class="text-xs ${color}">${text}</span>`
   }
 }
+
+DashboardSyncController.targets = ["status"]
+DashboardSyncController.values = { interval: { type: Number, default: 30_000 } }
+
+export default DashboardSyncController

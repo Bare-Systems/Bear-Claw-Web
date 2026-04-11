@@ -26,12 +26,13 @@
         </p>
       <% end %>
     </div>
-    <% if edit_mode %>
-      <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2">
+      <span class="rounded-full px-3 py-1 text-[11px] font-medium uppercase tracking-wide <%= dashboard_health_badge_classes(dashboard_tile_health_state(tile)) %>"><%= dashboard_tile_health_label(tile) %></span>
+      <% if edit_mode %>
         <span class="rounded-full border border-sky-800/70 bg-sky-950/60 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-sky-200">drag header</span>
         <span class="rounded-full border border-sky-800/70 bg-sky-950/60 px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-sky-200">editable</span>
-      </div>
-    <% end %>
+      <% end %>
+    </div>
   </div>
 
   <div class="flex-1 space-y-3 p-4">

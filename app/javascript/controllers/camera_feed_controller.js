@@ -1,12 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 
-export default class extends Controller {
-  static targets = ["image", "placeholder"]
-  static values = {
-    interval: { type: Number, default: 4000 },
-    url: String,
-  }
-
+class CameraFeedController extends Controller {
   connect() {
     this.refresh = this.refresh.bind(this)
     this.refresh()
@@ -38,3 +32,11 @@ export default class extends Controller {
     this.imageTarget.src = `${this.urlValue}${separator}t=${Date.now()}`
   }
 }
+
+CameraFeedController.targets = ["image", "placeholder"]
+CameraFeedController.values = {
+  interval: { type: Number, default: 4000 },
+  url: String,
+}
+
+export default CameraFeedController

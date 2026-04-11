@@ -1,0 +1,158 @@
+<%= form_with url: home_dashboard_tile_dashboard_widgets_path(tile),
+  method: :post,
+  class: "space-y-3 rounded-xl border border-dashed border-gray-700 bg-gray-900/40 p-3",
+  data: {
+    controller: "widget-picker",
+    widget_picker_widget_types_value: dashboard_widget_type_labels.to_json
+  } do |form| %>
+  <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Add Widget</p>
+
+  <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_12rem]">
+    <div>
+      <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" for="widget-picker-search-<%= tile.id %>">Search Capabilities</label>
+      <input
+        id="widget-picker-search-<%= tile.id %>"
+        type="search"
+        placeholder="Search by provider, device, or capability"
+        class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+        data-widget-picker-target="search"
+        data-action="input->widget-picker#filter change->widget-picker#filter"
+      >
+    </div>
+
+    <div>
+      <%= form.label :capability_type_filter, "Capability Type", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+      <%= form.select :capability_type_filter,
+        options_for_select([ [ "All types", "" ] ] + capability_type_options),
+        {},
+        class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white",
+        data: {
+          widget_picker_target: "capabilityTypeFilter",
+          action: "change->widget-picker#filter"
+        } %>
+    </div>
+
+    <div>
+      <%= form.label :provider_filter, "Provider", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+      <%= form.select :provider_filter,
+        options_for_select([ [ "All providers", "" ] ] + dashboard_capability_provider_options(available_capabilities)),
+        {},
+        class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white",
+        data: {
+          widget_picker_target: "providerFilter",
+          action: "change->widget-picker#filter"
+        } %>
+    </div>
+  </div>
+
+  <div class="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+    <div>
+      <p class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">Capability</p>
+
+      <div class="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-gray-800 bg-gray-950/60 p-2">
+        <% available_capabilities.each do |capability| %>
+          <% picker = dashboard_capability_picker_data(capability) %>
+          <% radio_id = "widget-picker-tile-#{tile.id}-capability-#{capability.id}" %>
+          <label
+            for="<%= radio_id %>"
+            class="block rounded-lg border border-gray-800 bg-gray-900/70 p-3 transition hover:border-sky-700/60 hover:bg-gray-900"
+            data-widget-picker-target="option"
+            data-search-text="<%= picker[:search_text] %>"
+            data-provider="<%= picker[:provider_name] %>"
+            data-capability-type="<%= picker[:capability_type] %>"
+          >
+            <div class="flex items-start gap-3">
+              <%= radio_button_tag "dashboard_widget[device_capability_id]",
+                capability.id,
+                false,
+                id: radio_id,
+                class: "mt-1 h-4 w-4 border-gray-600 bg-gray-950 text-sky-500 focus:ring-sky-500",
+                data: {
+                  action: "change->widget-picker#selectionChanged",
+                  provider_name: picker[:provider_name],
+                  device_name: picker[:device_name],
+                  capability_name: picker[:capability_name],
+                  capability_type_label: picker[:capability_type_label],
+                  source_label: picker[:source_label],
+                  default_widget_type: picker[:default_widget_type],
+                  default_widget_label: picker[:default_widget_label],
+                  allowed_widget_types: picker[:allowed_widget_types].to_json
+                } %>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-medium text-white"><%= picker[:capability_name] %></p>
+                    <p class="mt-1 truncate text-xs text-gray-400"><%= picker[:device_name] %></p>
+                  </div>
+                  <span class="rounded-full border border-gray-700 px-2 py-1 text-[11px] uppercase tracking-wide text-gray-300"><%= picker[:capability_type_label] %></span>
+                </div>
+
+                <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
+                  <span><%= picker[:provider_name] %></span>
+                  <span>•</span>
+                  <span>Default: <%= picker[:default_widget_label] %></span>
+                </div>
+              </div>
+            </div>
+          </label>
+        <% end %>
+
+        <div
+          class="hidden rounded-lg border border-amber-800/60 bg-amber-950/30 px-3 py-2 text-sm text-amber-200"
+          data-widget-picker-target="emptyState"
+        >
+          No capabilities match the current search and filters.
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-3">
+      <div class="rounded-xl border border-gray-800 bg-gray-950/70 p-3">
+        <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Selected Capability</p>
+        <p class="mt-2 text-sm font-semibold text-white" data-widget-picker-target="selectedCapabilityName">Choose a capability</p>
+        <p class="mt-1 text-xs text-gray-500" data-widget-picker-target="selectedCapabilityContext">Provider and device details will appear here.</p>
+
+        <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <dt class="text-xs uppercase tracking-wide text-gray-500">Provider</dt>
+            <dd class="mt-1 text-gray-200" data-widget-picker-target="providerName">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs uppercase tracking-wide text-gray-500">Capability Type</dt>
+            <dd class="mt-1 text-gray-200" data-widget-picker-target="capabilityType">—</dd>
+          </div>
+          <div class="col-span-2">
+            <dt class="text-xs uppercase tracking-wide text-gray-500">Recommended Widget</dt>
+            <dd class="mt-1 text-gray-200" data-widget-picker-target="defaultWidgetLabel">Choose a capability to load its recommendation.</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div>
+        <%= form.label :widget_type, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+        <%= form.select :widget_type,
+          options_for_select(dashboard_widget_type_options),
+          { prompt: "Use capability default" },
+          name: "dashboard_widget[widget_type]",
+          class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white",
+          data: { widget_picker_target: "widgetType" } %>
+        <p class="mt-1 text-xs text-gray-500" data-widget-picker-target="widgetTypeHint">
+          Choose a capability to narrow the valid widget types.
+        </p>
+      </div>
+
+      <div>
+        <%= form.label :title, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+        <%= form.text_field :title, name: "dashboard_widget[title]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+
+      <div>
+        <%= form.label :refresh_interval_seconds, "Refresh Interval (s)", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+        <%= form.number_field :refresh_interval_seconds, name: "dashboard_widget[refresh_interval_seconds]", min: 2, value: 4, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+    </div>
+  </div>
+
+  <%= form.submit "Add Widget", class: "w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400" %>
+<% end %>

@@ -199,7 +199,105 @@
           </div>
         </div>
       <% end %>
+</div>
+  </section>
+
+  <section class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
+    <h2 class="text-sm font-semibold text-white">Layout History</h2>
+    <p class="mt-1 text-sm text-gray-500">Undo the latest layout change and review recent layout snapshots.</p>
+
+    <div class="mt-4 space-y-3">
+      <%= button_to "Undo Last Change",
+        undo_home_dashboard_layout_history_path,
+        method: :post,
+        params: { dashboard_id: dashboard.id },
+        class: "w-full rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-gray-800" %>
+
+      <% if dashboard.settings_hash["layout_history"].present? %>
+        <div class="space-y-2">
+          <% Array(dashboard.settings_hash["layout_history"]).last(5).reverse_each do |entry| %>
+            <div class="rounded-xl border border-gray-800 bg-gray-900/70 px-3 py-2">
+              <p class="text-sm font-medium text-white"><%= entry["label"].presence || "Layout change" %></p>
+              <p class="mt-1 text-xs text-gray-500"><%= pluralize(Array(entry["tiles"]).size, "tile") %> · <%= dashboard_layout_history_recorded_at(entry) %></p>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="rounded-xl border border-dashed border-gray-700 bg-gray-950/50 px-4 py-3 text-sm text-gray-500">No layout history yet. Your next layout change will be undoable.</p>
+      <% end %>
     </div>
+  </section>
+
+  <section class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
+    <h2 class="text-sm font-semibold text-white">Layout Presets</h2>
+    <p class="mt-1 text-sm text-gray-500">Save the current tile arrangement as a named preset and reapply it later.</p>
+
+    <%= form_with url: home_dashboard_layout_presets_path, method: :post, class: "mt-4 space-y-3" do |form| %>
+      <%= hidden_field_tag :dashboard_id, dashboard.id %>
+      <div>
+        <%= form.label :name, "Preset Name", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+        <%= form.text_field :name, name: "layout_preset[name]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white", placeholder: "Operations Focus" %>
+      </div>
+      <%= form.submit "Save Layout Preset", class: "w-full rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-gray-800" %>
+    <% end %>
+
+    <% if dashboard.layout_presets.any? %>
+      <div class="mt-4 space-y-3">
+        <% dashboard.layout_presets.each do |preset| %>
+          <div class="rounded-xl border border-gray-800 bg-gray-900/70 p-3">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-white"><%= preset["name"] %></p>
+                <p class="mt-1 text-xs text-gray-500"><%= pluralize(Array(preset["tiles"]).size, "tile") %> · saved <%= dashboard_layout_preset_saved_at(preset) %></p>
+              </div>
+              <div class="flex items-center gap-2">
+                <%= button_to "Apply #{preset["name"]}",
+                  apply_home_dashboard_layout_presets_path,
+                  method: :post,
+                  params: { dashboard_id: dashboard.id, name: preset["name"] },
+                  class: "rounded-lg bg-sky-500 px-3 py-2 text-xs font-semibold text-slate-950 transition hover:bg-sky-400" %>
+                <%= button_to "Delete",
+                  home_dashboard_layout_preset_path(name: preset["name"], dashboard_id: dashboard.id),
+                  method: :delete,
+                  class: "rounded-lg border border-red-800/70 px-3 py-2 text-xs font-medium text-red-200 transition hover:bg-red-950/60",
+                  data: { turbo_confirm: "Delete layout preset \"#{preset["name"]}\"?" } %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="mt-4 rounded-xl border border-dashed border-gray-700 bg-gray-950/50 px-4 py-3 text-sm text-gray-500">No saved layout presets yet.</p>
+    <% end %>
+  </section>
+
+  <section class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
+    <h2 class="text-sm font-semibold text-white">Quick Add Packs</h2>
+    <p class="mt-1 text-sm text-gray-500">Apply a preset to add a useful bundle of tiles and widgets in one step.</p>
+
+    <% packs = dashboard_quick_add_packs(available_capabilities) %>
+    <% if packs.any? %>
+      <div class="mt-4 space-y-3">
+        <% packs.each do |pack| %>
+          <div class="rounded-xl border border-gray-800 bg-gray-900/70 p-3">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold text-white"><%= pack.label %></p>
+                <p class="mt-1 text-xs text-gray-500"><%= pack.description %></p>
+                <p class="mt-2 text-xs text-gray-600"><%= pluralize(pack.items.size, "tile") %> · <%= pack.items.map(&:title).first(3).join(" · ") %></p>
+              </div>
+              <%= button_to "Add #{pack.label}",
+                apply_pack_home_dashboard_tiles_path,
+                method: :post,
+                params: { pack_key: pack.key, dashboard_id: dashboard.id },
+                class: "rounded-lg bg-sky-500 px-3 py-2 text-xs font-semibold text-slate-950 transition hover:bg-sky-400" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="mt-4 rounded-xl border border-dashed border-gray-700 bg-gray-950/50 px-4 py-3 text-sm text-gray-500">No quick-add packs are available yet. Add more connected capabilities to unlock presets.</p>
+    <% end %>
   </section>
 
   <section class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
@@ -226,11 +324,11 @@
       <div class="grid grid-cols-2 gap-3">
         <div>
           <%= form.label :width, "Width", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
-          <%= form.number_field :width, name: "dashboard_tile[width]", min: 1, max: 4, value: 1, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          <%= form.number_field :width, name: "dashboard_tile[width]", min: 1, max: dashboard.columns, value: DashboardTile::DEFAULT_SPAN, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
         </div>
         <div>
           <%= form.label :height, "Height", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
-          <%= form.number_field :height, name: "dashboard_tile[height]", min: 1, max: 3, value: 1, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          <%= form.number_field :height, name: "dashboard_tile[height]", min: 1, max: DashboardTile::MAX_HEIGHT, value: DashboardTile::DEFAULT_SPAN, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
         </div>
       </div>
 
@@ -240,7 +338,7 @@
 
   <section class="space-y-4">
     <% dashboard.dashboard_tiles.each do |tile| %>
-      <div class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
+      <div id="tile-editor-<%= tile.id %>" class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
         <div class="mb-4 flex items-start justify-between gap-3">
           <div>
             <h3 class="text-sm font-semibold text-white"><%= tile.display_title %></h3>
@@ -267,11 +365,11 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <%= form.label :width, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
-              <%= form.number_field :width, min: 1, max: 4, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+              <%= form.number_field :width, min: 1, max: dashboard.columns, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
             </div>
             <div>
               <%= form.label :height, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
-              <%= form.number_field :height, min: 1, max: 3, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+              <%= form.number_field :height, min: 1, max: DashboardTile::MAX_HEIGHT, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
             </div>
           </div>
           <%= form.submit "Save Tile", class: "w-full rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-gray-800" %>
@@ -306,31 +404,7 @@
             <% end %>
           <% end %>
 
-          <%= form_with url: home_dashboard_tile_dashboard_widgets_path(tile), method: :post, class: "space-y-3 rounded-xl border border-dashed border-gray-700 bg-gray-900/40 p-3" do |form| %>
-            <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Add Widget</p>
-
-            <div>
-              <%= form.label :device_capability_id, "Capability", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
-              <%= form.select :device_capability_id, options_for_select(available_capabilities.map { |capability| [dashboard_capability_label(capability), capability.id] }), { prompt: "Choose a capability" }, name: "dashboard_widget[device_capability_id]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
-            </div>
-
-            <div>
-              <%= form.label :widget_type, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
-              <%= form.select :widget_type, options_for_select(dashboard_widget_type_options), { prompt: "Use capability default" }, name: "dashboard_widget[widget_type]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
-            </div>
-
-            <div>
-              <%= form.label :title, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
-              <%= form.text_field :title, name: "dashboard_widget[title]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
-            </div>
-
-            <div>
-              <%= form.label :refresh_interval_seconds, "Refresh Interval (s)", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
-              <%= form.number_field :refresh_interval_seconds, name: "dashboard_widget[refresh_interval_seconds]", min: 2, value: 4, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
-            </div>
-
-            <%= form.submit "Add Widget", class: "w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400" %>
-          <% end %>
+          <%= render "home/widget_picker", tile: tile, available_capabilities: available_capabilities %>
         </div>
       </div>
     <% end %>

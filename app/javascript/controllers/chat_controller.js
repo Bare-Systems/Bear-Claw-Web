@@ -1,9 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 
-export default class extends Controller {
-  static targets = ["launcher", "panel", "messages", "input", "submit", "loading", "form", "empty"]
-  static values = { expanded: Boolean }
-
+class ChatController extends Controller {
   connect() {
     this.expanded = this.expandedValue
     this.syncExpandedState()
@@ -21,7 +18,7 @@ export default class extends Controller {
   }
 
   autoResize(event) {
-    const el = event.target ?? event
+    const el = event.target || event
     el.style.height = "auto"
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`
   }
@@ -39,7 +36,7 @@ export default class extends Controller {
 
   onSubmitEnd(event) {
     this.setLoading(false)
-    if (event.detail?.success === false) {
+    if (event.detail && event.detail.success === false) {
       this.focusInput()
       return
     }
@@ -145,3 +142,8 @@ export default class extends Controller {
     return empty
   }
 }
+
+ChatController.targets = ["launcher", "panel", "messages", "input", "submit", "loading", "form", "empty"]
+ChatController.values = { expanded: Boolean }
+
+export default ChatController

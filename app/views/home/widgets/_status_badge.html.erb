@@ -25,4 +25,8 @@
   <% if state["last_error"].present? %>
     <p class="mt-4 rounded-lg border border-red-900/70 bg-red-950/40 px-3 py-2 text-sm text-red-200"><%= state["last_error"] %></p>
   <% end %>
+
+  <div class="mt-4">
+    <%= render "home/widgets/health_meta", widget: widget %>
+  </div>
 </section>

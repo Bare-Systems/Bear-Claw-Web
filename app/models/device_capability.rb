@@ -5,6 +5,8 @@ class DeviceCapability < ApplicationRecord
 
   has_many :dashboard_widgets, dependent: :nullify
 
+  delegate :service_provider, to: :device, allow_nil: true
+
   validates :key, presence: true, uniqueness: { scope: :device_id }
   validates :name, presence: true
   validates :capability_type, presence: true, inclusion: { in: CAPABILITY_TYPES }

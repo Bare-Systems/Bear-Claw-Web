@@ -50,6 +50,7 @@ module Home
 
     def set_dashboard
       @dashboard = Dashboard.fetch_or_create_for!(user: current_user, context: :home, name: "Home Dashboard")
+      @dashboard = Home::DashboardDensityUpgrader.new(dashboard: @dashboard).upgrade!
     end
 
     def set_tile
@@ -62,9 +63,9 @@ module Home
 
     def widget_type_for(capability)
       requested = widget_params[:widget_type].presence
-      return requested if requested.present? && capability.allowed_widget_types.include?(requested)
+      return capability.default_widget_type if requested.blank?
 
-      capability.default_widget_type
+      requested
     end
 
     def widget_settings
