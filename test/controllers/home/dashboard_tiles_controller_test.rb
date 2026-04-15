@@ -22,6 +22,7 @@ class Home::DashboardTilesControllerTest < ActionController::TestCase
       post :create, params: {
         dashboard_tile: {
           title: "Climate",
+          section: "Operations",
           row: 3,
           column: 1,
           width: 2,
@@ -34,6 +35,7 @@ class Home::DashboardTilesControllerTest < ActionController::TestCase
 
     assert_redirected_to home_root_path(edit: 1)
     assert_equal "Climate", tile.title
+    assert_equal "Operations", tile.settings_hash["section"]
     assert_equal 2, tile.width
   end
 
@@ -83,6 +85,25 @@ class Home::DashboardTilesControllerTest < ActionController::TestCase
     assert_equal 3, tile.column
     assert_equal 6, tile.width
     assert_equal 4, tile.height
+  end
+
+  test "updates a tile section" do
+    tile = @dashboard.dashboard_tiles.create!(title: "Scoped", row: 1, column: 1, width: 2, height: 2, position: 1)
+
+    patch :update, params: {
+      id: tile.id,
+      dashboard_tile: {
+        title: "Scoped",
+        section: "Security",
+        row: 1,
+        column: 1,
+        width: 2,
+        height: 2
+      }
+    }
+
+    assert_redirected_to home_root_path(edit: 1)
+    assert_equal "Security", tile.reload.settings_hash["section"]
   end
 
   test "applies a quick-add pack and creates recommended tiles with widgets" do

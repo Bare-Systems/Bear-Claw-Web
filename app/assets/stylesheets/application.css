@@ -8,3 +8,29 @@
  *
  * Consider organizing styles into separate files for maintainability.
  */
+
+.dashboard-grid {
+  grid-auto-flow: row dense;
+}
+
+@media (max-width: 767px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-rows: minmax(8.5rem, auto);
+  }
+
+  .dashboard-tile {
+    grid-column: auto / span var(--tile-mobile-span) !important;
+    grid-row: auto / span var(--tile-mobile-height) !important;
+    min-width: 0;
+  }
+
+  .dashboard-section-tabs {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .dashboard-section-tabs::-webkit-scrollbar {
+    display: none;
+  }
+}

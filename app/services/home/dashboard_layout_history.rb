@@ -24,6 +24,7 @@ module Home
             "width" => tile.width,
             "height" => tile.height,
             "position" => tile.position,
+            "section" => tile.section_name,
             "widgets" => tile.dashboard_widgets.order(:position, :id).map do |widget|
               {
                 "device_capability_id" => widget.device_capability_id,

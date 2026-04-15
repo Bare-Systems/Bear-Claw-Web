@@ -18,6 +18,10 @@ class DashboardTile < ApplicationRecord
     title.presence || dashboard_widgets.first&.display_title || "Tile #{id}"
   end
 
+  def section_name
+    settings_hash["section"].to_s.strip.presence || "General"
+  end
+
   private
 
   def width_within_dashboard_bounds

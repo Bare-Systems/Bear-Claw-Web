@@ -27,6 +27,14 @@ module Home
       @service_connections = ServiceConnection.includes(:service_provider).order(:name)
       @devices = Device.for_home(current_home).includes(:service_connection, :device_capabilities).order(:name)
       @edit_mode = params[:edit] == "1"
+      @dashboard_sections = @dashboard.dashboard_tiles.map(&:section_name).uniq.sort
+      @selected_section = params[:section].presence_in(@dashboard_sections)
+      @visible_tiles = if @selected_section.present?
+        @dashboard.dashboard_tiles.select { |tile| tile.section_name == @selected_section }
+      else
+        @dashboard.dashboard_tiles.to_a
+      end
+      @dashboard_alerts = helpers.dashboard_alerts_for_tiles(@visible_tiles)
     end
 
     private

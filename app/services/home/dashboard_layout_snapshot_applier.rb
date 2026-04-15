@@ -19,7 +19,8 @@ module Home
             column: [ entry.fetch("column", 1).to_i, 1 ].max,
             width: [ entry.fetch("width", DashboardTile::DEFAULT_SPAN).to_i, @dashboard.columns ].min,
             height: [ entry.fetch("height", DashboardTile::DEFAULT_SPAN).to_i, DashboardTile::MAX_HEIGHT ].min,
-            position: index + 1
+            position: index + 1,
+            settings: snapshot_tile_settings(entry, tile)
           )
           tile.save!
           sync_widgets!(tile, entry.fetch("widgets", []))
@@ -49,6 +50,12 @@ module Home
           settings: widget_entry["settings"].is_a?(Hash) ? widget_entry["settings"] : {}
         )
       end
+    end
+
+    def snapshot_tile_settings(entry, tile)
+      settings = tile.settings_hash.deep_dup
+      section = entry["section"].to_s.strip.presence
+      section.present? ? settings.merge("section" => section) : settings.except("section")
     end
   end
 end

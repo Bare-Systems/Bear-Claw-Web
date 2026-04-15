@@ -1,4 +1,5 @@
 module HomeHelper
+  DASHBOARD_DEFAULT_SECTIONS = [ "General", "Cameras", "Security", "Air", "Trading", "Operations" ].freeze
   DASHBOARD_HEALTH_THRESHOLDS = {
     "camera_feed" => 45.seconds,
     "status_badge" => 10.minutes,
@@ -16,11 +17,42 @@ module HomeHelper
     offline: 3
   }.freeze
 
+  DASHBOARD_ALERT_SEVERITY = {
+    offline: 0,
+    error: 1,
+    stale: 2
+  }.freeze
+
   DASHBOARD_OFFLINE_STATUSES = %w[offline error dead blocked unavailable].freeze
   DASHBOARD_STALE_STATUSES = %w[stale degraded warning pending].freeze
 
   def dashboard_tile_style(tile)
-    "grid-column: #{tile.column} / span #{tile.width}; grid-row: #{tile.row} / span #{tile.height};"
+    [
+      "--tile-column: #{tile.column}",
+      "--tile-row: #{tile.row}",
+      "--tile-width: #{tile.width}",
+      "--tile-height: #{tile.height}",
+      "--tile-mobile-span: #{dashboard_tile_mobile_span(tile)}",
+      "--tile-mobile-height: #{dashboard_tile_mobile_height(tile)}",
+      "grid-column: var(--tile-column) / span var(--tile-width)",
+      "grid-row: var(--tile-row) / span var(--tile-height)"
+    ].join("; ")
+  end
+
+  def dashboard_tile_mobile_span(tile)
+    return 2 if tile.width >= 4
+    return 2 if tile.dashboard_widgets.any? { |widget| widget.widget_type == "camera_feed" }
+
+    1
+  end
+
+  def dashboard_tile_mobile_height(tile)
+    max_height = tile.dashboard_widgets.any? { |widget| widget.widget_type == "camera_feed" } ? 3 : 2
+    tile.height.clamp(1, max_height)
+  end
+
+  def dashboard_section_options(dashboard)
+    (DASHBOARD_DEFAULT_SECTIONS + dashboard.dashboard_tiles.map(&:section_name)).uniq.sort
   end
 
   def dashboard_connection_status_label(connection)
@@ -211,6 +243,73 @@ module HomeHelper
 
   def dashboard_tile_health_label(tile)
     dashboard_health_label_for_state(dashboard_tile_health_state(tile))
+  end
+
+  def dashboard_alerts_for_tiles(tiles, limit: 6)
+    Array(tiles)
+      .flat_map do |tile|
+        tile.dashboard_widgets.filter_map do |widget|
+          alert_state = dashboard_widget_alert_state(widget)
+          next if alert_state.blank?
+
+          {
+            tile: tile,
+            widget: widget,
+            alert_state: alert_state,
+            label: dashboard_alert_label_for_state(alert_state),
+            detail: dashboard_alert_detail(widget, alert_state),
+            section_name: tile.section_name
+          }
+        end
+      end
+      .sort_by do |alert|
+        [
+          DASHBOARD_ALERT_SEVERITY.fetch(alert[:alert_state], 99),
+          alert[:tile].position,
+          alert[:widget].position
+        ]
+      end
+      .first(limit)
+  end
+
+  def dashboard_widget_alert_state(widget)
+    health_state = dashboard_widget_health_state(widget)
+    capability = widget.device_capability
+    last_error = capability&.state_hash&.[]("last_error").presence
+
+    return :offline if health_state == :offline
+    return :error if last_error.present?
+    return :stale if health_state == :stale
+
+    nil
+  end
+
+  def dashboard_alert_label_for_state(state)
+    case state.to_sym
+    when :offline then "Offline"
+    when :error then "Error"
+    else "Stale"
+    end
+  end
+
+  def dashboard_alert_detail(widget, alert_state = dashboard_widget_alert_state(widget))
+    capability = widget.device_capability
+    return dashboard_widget_health_detail(widget) if capability.blank?
+
+    return capability.state_hash["last_error"] if alert_state.to_sym == :error
+
+    dashboard_widget_health_detail(widget)
+  end
+
+  def dashboard_alert_badge_classes(state)
+    case state.to_sym
+    when :offline
+      "border-red-700/70 bg-red-950/70 text-red-200"
+    when :error
+      "border-amber-700/70 bg-amber-950/70 text-amber-200"
+    else
+      "border-yellow-700/70 bg-yellow-950/70 text-yellow-200"
+    end
   end
 
   def dashboard_health_badge_classes(state)

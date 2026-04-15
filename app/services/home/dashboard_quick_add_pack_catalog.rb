@@ -1,7 +1,7 @@
 module Home
   class DashboardQuickAddPackCatalog
     Pack = Struct.new(:key, :label, :description, :items, keyword_init: true)
-    Item = Struct.new(:capability, :widget_type, :title, :width, :height, :settings, keyword_init: true)
+    Item = Struct.new(:capability, :widget_type, :title, :section, :width, :height, :settings, keyword_init: true)
 
     def initialize(capabilities:)
       @capabilities = Array(capabilities)
@@ -35,6 +35,7 @@ module Home
             capability: capability,
             widget_type: "camera_feed",
             title: capability.device.name,
+            section: "Cameras",
             width: 4,
             height: 3,
             settings: { "refresh_interval_seconds" => 4 }
@@ -56,6 +57,7 @@ module Home
             capability: capability,
             widget_type: "air_quality_stat",
             title: capability.name,
+            section: "Air",
             width: 2,
             height: 2,
             settings: {}
@@ -77,6 +79,7 @@ module Home
             capability: capability,
             widget_type: "security_stat",
             title: capability.name,
+            section: "Security",
             width: 2,
             height: 2,
             settings: {}
@@ -98,6 +101,7 @@ module Home
             capability: capability,
             widget_type: "portfolio_stat",
             title: capability.name,
+            section: "Trading",
             width: 2,
             height: 2,
             settings: {}

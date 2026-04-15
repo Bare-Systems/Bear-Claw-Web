@@ -95,6 +95,7 @@ Rails.application.routes.draw do
     end
     resource :dashboard_layout_history, path: "dashboard/layout_history", only: [], controller: :dashboard_layout_history do
       post :undo
+      post :reset
     end
     resources :dashboard_widgets, path: "dashboard/widgets", only: [ :update, :destroy ]
     resources :cameras,  only: [ :index, :show ] do

@@ -1,7 +1,7 @@
 <% cap       = widget.device_capability %>
 <% presenter = Home::MetricPresenter.new(cap) %>
 
-<section id="widget-<%= widget.id %>" class="rounded-xl border border-gray-800 bg-gray-900/70 p-4">
+<section id="widget-<%= widget.id %>" class="rounded-xl border border-gray-800 bg-gray-900/70 p-3 sm:p-4">
 
   <%# ── Header: icon · name · scope · quality badge ──────────────────────── %>
   <div class="flex items-start justify-between gap-2">
@@ -14,14 +14,14 @@
         <% end %>
       </div>
     </div>
-    <span class="flex-shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium <%= presenter.quality_badge_class %>">
+    <span class="flex-shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium sm:text-xs <%= presenter.quality_badge_class %>">
       <%= presenter.threshold_label %>
     </span>
   </div>
 
   <%# ── Primary reading ───────────────────────────────────────────────────── %>
   <div class="mt-5">
-    <p class="text-4xl font-bold leading-none tracking-tight <%= presenter.value_color_class %>">
+    <p class="text-3xl font-bold leading-none tracking-tight sm:text-4xl <%= presenter.value_color_class %>">
       <%= presenter.display_value %>
     </p>
     <p class="mt-1.5 text-sm text-gray-500">

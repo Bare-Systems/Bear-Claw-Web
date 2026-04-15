@@ -99,4 +99,94 @@ class HomeHelperTest < ActionView::TestCase
       assert_equal "Offline", dashboard_tile_health_label(@tile)
     end
   end
+
+  test "derives compact mobile spans and heights from tile content" do
+    assert_equal 1, dashboard_tile_mobile_span(@tile)
+    assert_equal 2, dashboard_tile_mobile_height(@tile)
+
+    camera_capability = DeviceCapability.create!(
+      device: @capability.device,
+      key: "helper-camera",
+      name: "Helper Camera",
+      capability_type: "camera_feed",
+      configuration: { "camera_id" => "cam-helper" },
+      state: { "status" => "available" }
+    )
+
+    @tile.dashboard_widgets.create!(
+      device_capability: camera_capability,
+      widget_type: "camera_feed",
+      title: "Camera Widget",
+      position: 2
+    )
+
+    @tile.update!(width: 4, height: 4)
+
+    assert_equal 2, dashboard_tile_mobile_span(@tile)
+    assert_equal 3, dashboard_tile_mobile_height(@tile)
+    assert_includes dashboard_tile_style(@tile), "--tile-mobile-span: 2"
+    assert_includes dashboard_tile_style(@tile), "--tile-mobile-height: 3"
+  end
+
+  test "builds ranked dashboard alerts for stale offline and error widgets" do
+    travel_to Time.zone.parse("2026-04-11 10:00:00") do
+      @capability.update!(state: { "status" => "offline", "last_seen_at" => 1.minute.ago.iso8601, "last_error" => "Gateway timeout" })
+      @tile.update!(settings: @tile.settings_hash.merge("section" => "Security"))
+
+      stale_capability = DeviceCapability.create!(
+        device: @capability.device,
+        key: "helper-stale",
+        name: "Helper Stale",
+        capability_type: "sensor",
+        state: { "status" => "available", "last_seen_at" => 20.minutes.ago.iso8601 }
+      )
+      stale_tile = @tile.dashboard.dashboard_tiles.create!(
+        title: "Stale Tile",
+        row: 1,
+        column: 3,
+        width: 2,
+        height: 2,
+        position: 2,
+        settings: { "section" => "Air" }
+      )
+      stale_tile.dashboard_widgets.create!(
+        device_capability: stale_capability,
+        widget_type: "sensor_stat",
+        title: "Stale Reading",
+        position: 1
+      )
+
+      error_capability = DeviceCapability.create!(
+        device: @capability.device,
+        key: "helper-error",
+        name: "Helper Error",
+        capability_type: "status",
+        state: { "status" => "available", "last_seen_at" => 1.minute.ago.iso8601, "last_error" => "Probe failed" }
+      )
+      error_tile = @tile.dashboard.dashboard_tiles.create!(
+        title: "Error Tile",
+        row: 1,
+        column: 5,
+        width: 2,
+        height: 2,
+        position: 3,
+        settings: { "section" => "Operations" }
+      )
+      error_tile.dashboard_widgets.create!(
+        device_capability: error_capability,
+        widget_type: "status_badge",
+        title: "Error Badge",
+        position: 1
+      )
+
+      alerts = dashboard_alerts_for_tiles(@tile.dashboard.dashboard_tiles.order(:position), limit: 10)
+
+      assert_equal [ "Offline", "Error", "Stale" ], alerts.map { |alert| alert[:label] }
+      assert_equal [ "Health Tile", "Error Tile", "Stale Tile" ], alerts.map { |alert| alert[:tile].display_title }
+      assert_equal "Gateway timeout", alerts.first[:detail]
+      assert_equal "Probe failed", alerts.second[:detail]
+      assert_equal "Security", alerts.first[:section_name]
+      assert_equal "Stale Reading", alerts.third[:widget].display_title
+    end
+  end
 end

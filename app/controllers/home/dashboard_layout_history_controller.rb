@@ -12,6 +12,11 @@ module Home
       end
     end
 
+    def reset
+      Home::DashboardResetter.new(dashboard: @dashboard, user: @dashboard.user).restore_defaults!
+      redirect_to home_root_path(edit: 1, dashboard: @dashboard.name), notice: "Dashboard restored to defaults."
+    end
+
     private
 
     def set_dashboard

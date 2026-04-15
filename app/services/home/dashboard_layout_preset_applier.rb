@@ -20,10 +20,11 @@ module Home
         height = [ snapshot.fetch("height", tile.height).to_i, DashboardTile::MAX_HEIGHT ].min
         row = [ snapshot.fetch("row", tile.row).to_i, 1 ].max
         column = clamp_column(snapshot.fetch("column", tile.column).to_i, width)
+        section = snapshot["section"].to_s.strip.presence
         row, column = find_first_fit(occupied, width, height) unless fits?(occupied, row, column, width, height)
 
         place!(occupied, row, column, width, height)
-        placements[tile.id] = { row: row, column: column, width: width, height: height }
+        placements[tile.id] = { row: row, column: column, width: width, height: height, section: section }
       end
 
       tiles.each do |tile|
@@ -31,7 +32,7 @@ module Home
 
         row, column = find_first_fit(occupied, tile.width, tile.height)
         place!(occupied, row, column, tile.width, tile.height)
-        placements[tile.id] = { row: row, column: column, width: tile.width, height: tile.height }
+        placements[tile.id] = { row: row, column: column, width: tile.width, height: tile.height, section: tile.section_name }
       end
 
       ordered_tiles = tiles.sort_by do |tile|
@@ -48,6 +49,7 @@ module Home
             width: placement.fetch(:width),
             height: placement.fetch(:height),
             position: index + 1,
+            settings: updated_settings(tile, placement.fetch(:section)),
             updated_at: Time.current
           )
         end
@@ -108,6 +110,11 @@ module Home
           occupied[[ current_row, current_column ]] = true
         end
       end
+    end
+
+    def updated_settings(tile, section)
+      settings = tile.settings_hash.deep_dup
+      section.present? ? settings.merge("section" => section) : settings.except("section")
     end
   end
 end

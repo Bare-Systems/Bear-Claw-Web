@@ -10,12 +10,7 @@ module Home
       row, column = default_grid_position(position)
 
       tile = @dashboard.dashboard_tiles.create!(
-        title: tile_params[:title].presence || "Custom Tile",
-        row: tile_params[:row].presence || row,
-        column: tile_params[:column].presence || column,
-        width: tile_params[:width].presence || DashboardTile::DEFAULT_SPAN,
-        height: tile_params[:height].presence || DashboardTile::DEFAULT_SPAN,
-        position: position
+        tile_attributes(default_row: row, default_column: column, position: position)
       )
       normalize_layout!(anchor_tile: tile)
       layout_history.push!(snapshot: history_snapshot)
@@ -27,7 +22,7 @@ module Home
 
     def update
       history_snapshot = layout_history.snapshot(label: "Tile updated")
-      @tile.update!(tile_params)
+      @tile.update!(tile_attributes(existing_tile: @tile))
       normalize_layout!(anchor_tile: @tile)
       layout_history.push!(snapshot: history_snapshot)
 
@@ -113,6 +108,7 @@ module Home
       @dashboard.dashboard_tiles.order(:position, :id).map do |tile|
         {
           id: tile.id,
+          section: tile.section_name,
           row: tile.row,
           column: tile.column,
           width: tile.width,
@@ -122,8 +118,32 @@ module Home
       end
     end
 
+    def tile_attributes(default_row: nil, default_column: nil, position: nil, existing_tile: nil)
+      existing_settings = existing_tile&.settings_hash || {}
+
+      {
+        title: tile_params[:title].presence || existing_tile&.title || "Custom Tile",
+        row: tile_params[:row].presence || existing_tile&.row || default_row,
+        column: tile_params[:column].presence || existing_tile&.column || default_column,
+        width: tile_params[:width].presence || existing_tile&.width || DashboardTile::DEFAULT_SPAN,
+        height: tile_params[:height].presence || existing_tile&.height || DashboardTile::DEFAULT_SPAN,
+        position: position || existing_tile&.position,
+        settings: tile_settings(existing_settings)
+      }
+    end
+
+    def tile_settings(existing_settings)
+      settings = existing_settings.deep_dup
+      section = normalized_section(tile_params[:section])
+      section.present? ? settings.merge("section" => section) : settings.except("section")
+    end
+
+    def normalized_section(value)
+      value.to_s.strip.presence
+    end
+
     def tile_params
-      params.require(:dashboard_tile).permit(:title, :row, :column, :width, :height)
+      params.require(:dashboard_tile).permit(:title, :section, :row, :column, :width, :height)
     end
   end
 end

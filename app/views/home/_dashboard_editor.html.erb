@@ -212,6 +212,12 @@
         method: :post,
         params: { dashboard_id: dashboard.id },
         class: "w-full rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-200 transition hover:bg-gray-800" %>
+      <%= button_to "Restore Defaults",
+        reset_home_dashboard_layout_history_path,
+        method: :post,
+        params: { dashboard_id: dashboard.id },
+        class: "w-full rounded-lg border border-red-800/70 px-4 py-2 text-sm font-medium text-red-200 transition hover:bg-red-950/60",
+        data: { turbo_confirm: "Restore the default dashboard layout? This keeps your presets, and you can undo the reset." } %>
 
       <% if dashboard.settings_hash["layout_history"].present? %>
         <div class="space-y-2">
@@ -310,6 +316,15 @@
         <%= form.text_field :title, name: "dashboard_tile[title]", class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
       </div>
 
+      <div>
+        <%= form.label :section, "Section", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+        <%= form.select :section,
+          options_for_select(dashboard_section_options(dashboard), selected_section.presence || "General"),
+          {},
+          name: "dashboard_tile[section]",
+          class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+
       <div class="grid grid-cols-2 gap-3">
         <div>
           <%= form.label :row, "Row", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
@@ -337,12 +352,22 @@
   </section>
 
   <section class="space-y-4">
-    <% dashboard.dashboard_tiles.each do |tile| %>
+    <section class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
+      <h2 class="text-sm font-semibold text-white">Sections</h2>
+      <p class="mt-1 text-sm text-gray-500">Organize one dashboard into focused groups without creating a new dashboard.</p>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <% dashboard_section_options(dashboard).each do |section_name| %>
+          <span class="rounded-full border px-3 py-1 text-xs uppercase tracking-wide <%= selected_section == section_name ? 'border-sky-500 bg-sky-950/50 text-sky-200' : 'border-gray-700 text-gray-400' %>"><%= section_name %></span>
+        <% end %>
+      </div>
+    </section>
+
+    <% visible_tiles.each do |tile| %>
       <div id="tile-editor-<%= tile.id %>" class="rounded-2xl border border-gray-800 bg-gray-950/90 p-4">
         <div class="mb-4 flex items-start justify-between gap-3">
           <div>
             <h3 class="text-sm font-semibold text-white"><%= tile.display_title %></h3>
-            <p class="mt-1 text-xs text-gray-500">Tile <%= tile.id %> · <%= pluralize(tile.dashboard_widgets.size, "widget") %></p>
+            <p class="mt-1 text-xs text-gray-500">Tile <%= tile.id %> · <%= tile.section_name %> · <%= pluralize(tile.dashboard_widgets.size, "widget") %></p>
           </div>
           <%= button_to "Delete", home_dashboard_tile_path(tile), method: :delete, class: "rounded-lg border border-red-800/70 px-3 py-1 text-xs text-red-200 hover:bg-red-950/60", form_class: "inline", data: { turbo_confirm: "Delete \"#{tile.display_title}\" and all its widgets?" } %>
         </div>
@@ -351,6 +376,12 @@
           <div>
             <%= form.label :title, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
             <%= form.text_field :title, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          </div>
+          <div>
+            <%= form.label :section, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+            <%= select_tag "dashboard_tile[section]",
+              options_for_select(dashboard_section_options(dashboard), tile.section_name),
+              class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>

@@ -3,9 +3,9 @@
 <div class="w-full" data-controller="dashboard-sync">
 
   <%# ── Top bar: label · sync status · actions ─────────────────────────────── %>
-  <div class="mb-4 flex items-center justify-between">
+  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-400">Home Ops</p>
-    <div class="flex items-center gap-3">
+    <div class="flex flex-wrap items-center gap-2 sm:gap-3">
       <span id="dashboard-sync-status" data-dashboard-sync-target="status">
         <span class="text-xs text-gray-600">Connecting…</span>
       </span>
@@ -63,13 +63,30 @@
     <p class="mb-3 text-xs uppercase tracking-[0.22em] text-sky-300">Drag a tile header to move · drag the corner handle to resize · dense grid packs tiles to avoid dead space</p>
   <% end %>
 
+  <% if @dashboard_sections.any? %>
+    <div class="dashboard-section-tabs mb-4 flex items-center gap-2 overflow-x-auto pb-1">
+      <%= link_to "All",
+        home_root_path(dashboard: @dashboard.name, edit: @edit_mode ? 1 : nil),
+        class: "shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition #{ @selected_section.blank? ? 'border-sky-500 bg-sky-950/50 text-sky-200' : 'border-gray-700 text-gray-400 hover:bg-gray-900/60 hover:text-gray-200' }" %>
+      <% @dashboard_sections.each do |section| %>
+        <%= link_to section,
+          home_root_path(dashboard: @dashboard.name, section: section, edit: @edit_mode ? 1 : nil),
+          class: "shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wide transition #{ @selected_section == section ? 'border-sky-500 bg-sky-950/50 text-sky-200' : 'border-gray-700 text-gray-400 hover:bg-gray-900/60 hover:text-gray-200' }" %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if @dashboard_alerts.any? %>
+    <%= render "home/dashboard_priority_watch", alerts: @dashboard_alerts %>
+  <% end %>
+
   <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
     <section>
       <div class="pb-3">
-        <% if @dashboard.dashboard_tiles.empty? %>
+        <% if @visible_tiles.empty? %>
           <div class="flex min-h-[12rem] items-center justify-center rounded-2xl border border-dashed border-gray-700 bg-gray-900/30 text-gray-500">
             <div class="text-center">
-              <p class="text-sm">No tiles yet.</p>
+              <p class="text-sm"><%= @selected_section.present? ? "No tiles in #{@selected_section} yet." : "No tiles yet." %></p>
               <p class="mt-1 text-xs">
                 <% if @edit_mode %>
                   Use the editor on the right to add tiles.
@@ -81,7 +98,7 @@
           </div>
         <% else %>
           <div
-            class="grid w-full auto-rows-[minmax(10rem,_1fr)] gap-3"
+            class="dashboard-grid grid w-full auto-rows-[minmax(10rem,_1fr)] gap-3"
             style="grid-template-columns: repeat(<%= @dashboard.columns %>, minmax(0, 1fr));"
             <% if @edit_mode %>
               data-controller="dashboard-layout"
@@ -91,7 +108,7 @@
               data-dashboard-layout-dragging-class="opacity-80"
             <% end %>
           >
-            <% @dashboard.dashboard_tiles.each do |tile| %>
+            <% @visible_tiles.each do |tile| %>
               <%= render "home/dashboard_tile", tile: tile, edit_mode: @edit_mode %>
             <% end %>
           </div>
@@ -100,13 +117,15 @@
     </section>
 
     <% if @edit_mode %>
-      <aside>
+      <aside class="xl:sticky xl:top-4 xl:self-start">
         <%= render "home/dashboard_editor",
           dashboard: @dashboard,
+          selected_section: @selected_section,
           service_providers: @service_providers,
           service_connections: @service_connections,
           devices: @devices,
-          available_capabilities: @available_capabilities %>
+          available_capabilities: @available_capabilities,
+          visible_tiles: @visible_tiles %>
       </aside>
     <% end %>
   </div>

@@ -47,6 +47,7 @@ class Home::DashboardLayoutHistoryTest < ActiveSupport::TestCase
 
   test "records layout snapshots and undoes the latest change exactly" do
     history = Home::DashboardLayoutHistory.new(dashboard: @dashboard)
+    @tile.update!(settings: @tile.settings_hash.merge("section" => "Primary"))
 
     history.record!(label: "Before quick add")
     @dashboard.dashboard_tiles.create!(title: "Secondary", row: 1, column: 3, width: 2, height: 2, position: 2)
@@ -58,6 +59,7 @@ class Home::DashboardLayoutHistoryTest < ActiveSupport::TestCase
 
     assert_equal [ "Primary" ], @dashboard.reload.dashboard_tiles.order(:position).pluck(:title)
     assert_equal [ "Primary Widget" ], @dashboard.dashboard_widgets.pluck(:title)
+    assert_equal "Primary", @dashboard.dashboard_tiles.first.settings_hash["section"]
     assert_empty Home::DashboardLayoutHistory.new(dashboard: @dashboard).entries
   end
 

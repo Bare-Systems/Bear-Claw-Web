@@ -41,7 +41,8 @@ module Home
             "width" => tile.width,
             "height" => tile.height,
             "position" => tile.position,
-            "title" => tile.display_title
+            "title" => tile.display_title,
+            "section" => tile.section_name
           }
         end
       }

@@ -30,7 +30,8 @@ module Home
             column: 1,
             width: item.width,
             height: item.height,
-            position: position
+            position: position,
+            settings: item.section.present? ? { "section" => item.section } : {}
           )
           tile.dashboard_widgets.create!(
             device_capability: item.capability,

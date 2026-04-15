@@ -17,10 +17,12 @@ class Home::DashboardLayoutPresetStoreTest < ActiveSupport::TestCase
 
   test "saves and overwrites a named layout preset" do
     store = Home::DashboardLayoutPresetStore.new(dashboard: @dashboard)
+    @tile.update!(settings: @tile.settings_hash.merge("section" => "Cameras"))
 
     store.save!(name: "Focus")
     assert_equal [ "Focus" ], @dashboard.reload.layout_presets.map { |preset| preset.fetch("name") }
     assert_equal 1, @dashboard.layout_presets.first.fetch("tiles").size
+    assert_equal "Cameras", @dashboard.layout_presets.first.fetch("tiles").first.fetch("section")
 
     @tile.update!(row: 2, column: 5, width: 4, height: 3)
     store.save!(name: "Focus")

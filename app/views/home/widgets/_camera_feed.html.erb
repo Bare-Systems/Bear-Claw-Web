@@ -5,8 +5,8 @@
 
 <section
   id="widget-<%= widget.id %>"
-  class="group relative overflow-hidden rounded-b-2xl -mx-4 -mb-4 -mt-4 bg-gray-950"
-  style="min-height: 10rem; flex: 1;"
+  class="group relative overflow-hidden rounded-b-xl -mx-3 -mb-3 -mt-3 bg-gray-950 sm:-mx-4 sm:-mb-4 sm:-mt-4 sm:rounded-b-2xl"
+  style="min-height: 9rem; flex: 1;"
   data-controller="camera-feed"
   data-camera-feed-url-value="<%= camera_id.present? ? snapshot_home_camera_path(camera_id) : "" %>"
   data-camera-feed-interval-value="<%= widget.refresh_interval_seconds * 1000 %>"
@@ -22,7 +22,7 @@
   <%# No-signal placeholder %>
   <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center" data-camera-feed-target="placeholder">
     <span class="rounded-full border border-gray-700 px-2 py-1 text-xs uppercase tracking-wide text-gray-400">No Signal</span>
-    <p class="text-sm text-gray-500"><%= state["last_error"].presence || "Waiting for a fresh Koala snapshot." %></p>
+    <p class="text-xs text-gray-500 sm:text-sm"><%= state["last_error"].presence || "Waiting for a fresh Koala snapshot." %></p>
   </div>
 
   <%# Minimal name label — always visible, bottom-left %>

@@ -35,4 +35,15 @@ class Home::DashboardLayoutHistoryControllerTest < ActionController::TestCase
     assert_redirected_to home_root_path(edit: 1, dashboard: @dashboard.name)
     assert_match "No layout history", flash[:alert]
   end
+
+  test "reset restores dashboard defaults" do
+    @tile.update!(title: "Custom Tile", row: 4, column: 5, width: 4, height: 3)
+
+    post :reset, params: { dashboard_id: @dashboard.id }
+
+    assert_redirected_to home_root_path(edit: 1, dashboard: @dashboard.name)
+    assert_match "Dashboard restored to defaults.", flash[:notice]
+    assert_empty @dashboard.reload.dashboard_tiles
+    assert_equal "Before restore defaults", Home::DashboardLayoutHistory.new(dashboard: @dashboard).entries.last.fetch("label")
+  end
 end

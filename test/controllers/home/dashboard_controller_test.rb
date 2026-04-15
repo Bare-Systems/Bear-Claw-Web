@@ -63,6 +63,7 @@ class Home::DashboardControllerTest < ActionController::TestCase
   test "edit mode renders dashboard editor" do
     get :index, params: { edit: 1 }
     assert_response :success
+    assert_match "Sections",                          @response.body
     assert_match "Add Tile",                          @response.body
     assert_match "Add Widget",                        @response.body
     assert_match "Search Capabilities",               @response.body
@@ -73,6 +74,47 @@ class Home::DashboardControllerTest < ActionController::TestCase
     assert_match "data-controller=\"dashboard-layout\"", @response.body
     assert_match "data-controller=\"widget-picker\"", @response.body
     assert_match "Drag a tile header",                @response.body
+  end
+
+  test "section param filters the visible tiles for a dashboard" do
+    get :index
+    dashboard = Dashboard.find_by!(user: @user, context: "home", name: "Home Dashboard")
+    first_tile = dashboard.dashboard_tiles.find_by!(title: "CAM 1")
+    first_tile.update!(settings: first_tile.settings_hash.merge("section" => "Cameras"))
+    second_tile = dashboard.dashboard_tiles.find_by!(title: "CAM 2")
+    second_tile.update!(settings: second_tile.settings_hash.merge("section" => "Security"))
+
+    get :index, params: { section: "Security" }
+
+    assert_response :success
+    assert_match "Security", @response.body
+    assert_match "CAM 2", @response.body
+    assert_no_match "CAM 1", @response.body
+  end
+
+  test "priority watch only surfaces alerting widgets from the selected section" do
+    get :index
+    dashboard = Dashboard.find_by!(user: @user, context: "home", name: "Home Dashboard")
+
+    first_tile = dashboard.dashboard_tiles.find_by!(title: "CAM 1")
+    first_tile.update!(settings: first_tile.settings_hash.merge("section" => "Security"))
+    first_tile.dashboard_widgets.first.device_capability.update!(
+      state: { "status" => "offline", "last_seen_at" => 1.minute.ago.iso8601, "last_error" => "Camera offline" }
+    )
+
+    second_tile = dashboard.dashboard_tiles.find_by!(title: "CAM 2")
+    second_tile.update!(settings: second_tile.settings_hash.merge("section" => "Air"))
+    second_tile.dashboard_widgets.first.device_capability.update!(
+      state: { "status" => "available", "last_seen_at" => 1.hour.ago.iso8601 }
+    )
+
+    get :index, params: { section: "Security" }
+
+    assert_response :success
+    assert_match "Priority Watch", @response.body
+    assert_match "CAM 1", @response.body
+    assert_match "Camera offline", @response.body
+    assert_no_match "CAM 2", @response.body
   end
 
   test "empty state shown when dashboard has no tiles" do

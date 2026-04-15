@@ -31,6 +31,17 @@ module Home
       all_dashboards.first
     end
 
+    def restore_defaults!(dashboard)
+      spec = DASHBOARD_SPECS.find { |entry| entry[:name] == dashboard.name }
+
+      Dashboard.transaction do
+        dashboard.dashboard_tiles.destroy_all
+        send(spec[:seed], dashboard) if spec.present?
+      end
+
+      dashboard.reload
+    end
+
     private
 
     # ── Home Dashboard: cameras + Polar air quality ─────────────────────────
