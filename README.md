@@ -8,6 +8,12 @@ for:
 - Koala home workflows
 - Ursa security workflows
 
+Agent requests to BearClaw should go through Tardigrade, not directly to the
+loopback BearClaw port. Configure `BEARCLAW_URL` with the edge mount path, for
+example `https://bearclaw.baresystems.com/bearclaw`, so BearClawWeb can send
+scoped Tardigrade JWTs and let the edge assert `X-Tardigrade-User-ID`,
+`X-Tardigrade-Device-ID`, and `X-Tardigrade-Scopes` upstream.
+
 ## Homelab Network Contract
 
 The working `blink` topology is:
@@ -69,6 +75,14 @@ Polar-backed Home climate widgets follow the same rule:
 ```env
 POLAR_URL=http://192.168.86.53:6703
 POLAR_TOKEN=<polar service token>
+```
+
+BearClaw agent requests also need the shared Tardigrade JWT settings:
+
+```env
+TARDIGRADE_JWT_SECRET=<shared hs256 secret>
+TARDIGRADE_JWT_ISSUER=bearclaw-web
+TARDIGRADE_JWT_AUDIENCE=bearclaw-api
 ```
 
 ## Failure Behavior

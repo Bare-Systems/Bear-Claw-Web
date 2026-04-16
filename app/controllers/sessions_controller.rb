@@ -16,7 +16,7 @@ class SessionsController < ApplicationController
     invite = token.present? ? Invite.find_by(token: token) : nil
     user   = User.from_google(auth, invite: invite)
 
-    session[:user_id] = user.id
+    establish_session!(user)
     redirect_to root_path, notice: "Signed in as #{user.name}."
 
   rescue User::InviteRequiredError
@@ -62,7 +62,14 @@ class SessionsController < ApplicationController
       end
     end
 
-    session[:user_id] = user.id
+    establish_session!(user)
     redirect_to root_path, notice: "Signed in as #{user.name} (dev)."
+  end
+
+  private
+
+  def establish_session!(user)
+    session[:user_id] = user.id
+    session[:tardigrade_identity_token] = TardigradeIdentityToken.issue_for(user)
   end
 end

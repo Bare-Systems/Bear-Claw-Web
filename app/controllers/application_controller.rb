@@ -39,7 +39,18 @@ class ApplicationController < ActionController::Base
   def bearclaw_client
     BearClawClient.new(
       base_url: ENV.fetch("BEARCLAW_URL", "http://127.0.0.1:8080"),
-      token:    ENV["BEARCLAW_TOKEN"]
+      token: ENV["BEARCLAW_TOKEN"],
+      identity_token: ensure_tardigrade_identity_token
     )
+  end
+
+  def ensure_tardigrade_identity_token
+    return nil unless current_user
+    token = session[:tardigrade_identity_token].to_s
+    return token if token.present?
+
+    issued = TardigradeIdentityToken.issue_for(current_user)
+    session[:tardigrade_identity_token] = issued
+    issued
   end
 end

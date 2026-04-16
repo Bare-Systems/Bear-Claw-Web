@@ -17,9 +17,10 @@ class BearClawClient
     end
   end
 
-  def initialize(base_url:, token: nil)
+  def initialize(base_url:, token: nil, identity_token: nil)
     @base_url = base_url.to_s.strip
-    @token    = token.to_s.strip.presence
+    @token = token.to_s.strip.presence
+    @identity_token = identity_token.to_s.strip.presence
   end
 
   def health
@@ -102,7 +103,7 @@ class BearClawClient
     request = http_class.new(uri)
     request["Accept"]          = "application/json"
     request["X-BearClaw-Actor"] = "bearclaw-web"
-    request["Authorization"]   = "Bearer #{@token}" if @token
+    request["Authorization"]   = "Bearer #{authorization_token}" if authorization_token
 
     if payload
       request["Content-Type"] = "application/json"
@@ -135,7 +136,15 @@ class BearClawClient
   def build_uri(path)
     base     = URI.parse(@base_url)
     uri      = base.dup
-    uri.path = path.to_s.start_with?("/") ? path.to_s : "/#{path}"
+    normalized_path = path.to_s.start_with?("/") ? path.to_s : "/#{path}"
+    resolved_path = [ base.path.to_s.sub(%r{/\z}, ""), normalized_path.sub(%r{\A/}, "") ].reject(&:blank?).join("/")
+    resolved_path = "/#{resolved_path}" unless resolved_path.start_with?("/")
+    uri.path = resolved_path
+    uri.query = nil
     uri
+  end
+
+  def authorization_token
+    @identity_token || @token
   end
 end
