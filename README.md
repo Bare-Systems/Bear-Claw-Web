@@ -14,6 +14,16 @@ example `https://bearclaw.baresystems.com/bearclaw`, so BearClawWeb can send
 scoped Tardigrade JWTs and let the edge assert `X-Tardigrade-User-ID`,
 `X-Tardigrade-Device-ID`, and `X-Tardigrade-Scopes` upstream.
 
+The agent module also includes a Runs viewer at `/agent/runs`. That page reads
+BearClaw run-artifact APIs through the Rails backend, then proxies live SSE to
+the browser so operator sessions can inspect tool-call traces without exposing
+BearClaw auth headers to client-side JavaScript.
+
+The agent module also includes a transcript viewer at `/agent/transcripts`.
+That page reads Tardigrade's redacted `/bearclaw/transcripts` APIs through the
+Rails backend so operator sessions can inspect edge request/response captures
+without giving the browser direct access to transcript storage.
+
 ## Homelab Network Contract
 
 The working `blink` topology is:
@@ -94,6 +104,11 @@ If Koala is unavailable, the Home dashboard should degrade to unavailable camera
 tiles. It should not assume cameras are down until host-to-Koala reachability
 has been checked.
 
+If BearClaw is unavailable, `/agent/runs` and `/agent/runs/:id` should render a
+stable unavailable state rather than raising or redirect-looping. Rendered run
+artifacts must only contain the redacted payloads returned by BearClaw; raw
+bearer tokens should never appear in the HTML response.
+
 ## Deployment Validation
 
 The homelab Blink deploy for BearClaw is image-based:
@@ -123,5 +138,5 @@ local Postgres instance.
 Run the focused regression tests with:
 
 ```bash
-bundle exec rails test test/controllers/security/dashboard_controller_test.rb test/integration/login_page_test.rb
+bundle exec rails test test/controllers/agent/runs_controller_test.rb test/controllers/agent/transcripts_controller_test.rb test/services/bearclaw_client_test.rb test/integration/agent_runs_flow_test.rb test/integration/agent_transcripts_flow_test.rb
 ```

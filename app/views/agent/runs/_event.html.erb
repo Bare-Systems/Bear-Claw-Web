@@ -1,0 +1,31 @@
+<% event_type = event["type"].to_s %>
+<li
+  class="rounded-2xl border p-4 <%= bearclaw_run_event_classes(event_type) %>"
+  data-run-event-type="<%= event_type %>"
+  data-run-event-ts="<%= event["ts"] %>"
+  data-run-event-tool="<%= event["tool"].to_s %>"
+>
+  <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <span class="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-gray-300">
+        <%= bearclaw_run_event_title(event) %>
+      </span>
+      <% if event["tool"].present? %>
+        <span class="text-sm font-medium text-white"><%= event["tool"] %></span>
+      <% end %>
+    </div>
+    <time class="text-xs text-gray-500"><%= bearclaw_run_timestamp(event["ts"]) %></time>
+  </div>
+
+  <% lines = bearclaw_run_event_lines(event) %>
+  <% if lines.any? %>
+    <div class="mt-4 space-y-3">
+      <% lines.each do |label, value| %>
+        <div class="space-y-1">
+          <p class="text-[11px] font-medium uppercase tracking-[0.18em] text-gray-500"><%= label %></p>
+          <pre class="overflow-x-auto rounded-xl border border-white/10 bg-black/30 p-3 text-xs leading-6 text-gray-200 whitespace-pre-wrap"><%= value %></pre>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</li>

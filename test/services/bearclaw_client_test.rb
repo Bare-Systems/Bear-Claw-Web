@@ -21,4 +21,24 @@ class BearClawClientTest < ActiveSupport::TestCase
 
     assert_equal "scoped-token", client.send(:authorization_token)
   end
+
+  test "normalize_run_id rejects unsafe path segments" do
+    client = BearClawClient.new(base_url: "https://bearclaw.baresystems.com/bearclaw")
+
+    assert_raises(BearClawClient::RequestError) do
+      client.send(:normalize_run_id, "../run-1")
+    end
+  end
+
+  test "normalize_numeric_id rejects unsafe transcript ids" do
+    client = BearClawClient.new(base_url: "https://bearclaw.baresystems.com/bearclaw")
+
+    assert_raises(BearClawClient::RequestError) do
+      client.send(:normalize_numeric_id, "0", name: "transcript id")
+    end
+
+    assert_raises(BearClawClient::RequestError) do
+      client.send(:normalize_numeric_id, "../1", name: "transcript id")
+    end
+  end
 end

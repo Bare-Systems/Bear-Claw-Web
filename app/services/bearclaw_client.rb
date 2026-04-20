@@ -33,6 +33,34 @@ class BearClawClient
     post_json("/v1/chat", payload: { message: message })
   end
 
+  def list_runs
+    get_json("/v1/runs")
+  end
+
+  def get_run(id)
+    get_json("/v1/runs/#{normalize_run_id(id)}")
+  end
+
+  def list_transcripts
+    get_json("/transcripts")
+  end
+
+  def get_transcript(id)
+    get_json("/transcripts/#{normalize_numeric_id(id, name: "transcript id")}")
+  end
+
+  def stream_run(id)
+    run_id = normalize_run_id(id)
+
+    Enumerator.new do |yielder|
+      perform_stream("/v1/runs/#{run_id}/stream") do |chunk|
+        yielder << chunk
+      end
+    rescue Error => e
+      yielder << sse_frame("error", type: "error", code: "provider_unavailable", message: e.message)
+    end
+  end
+
   # ── Cron ──────────────────────────────────────────────────────────────────
 
   def list_cron_jobs
@@ -95,15 +123,8 @@ class BearClawClient
     validate_config!
 
     uri  = build_uri(path)
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl      = uri.scheme == "https"
-    http.open_timeout = 10
-    http.read_timeout = 150 # BearClaw agent has a 120s execution timeout (CPU-inference headroom)
-
-    request = http_class.new(uri)
-    request["Accept"]          = "application/json"
-    request["X-BearClaw-Actor"] = "bearclaw-web"
-    request["Authorization"]   = "Bearer #{authorization_token}" if authorization_token
+    http = build_http(uri)
+    request = build_request(http_class, uri, accept: "application/json")
 
     if payload
       request["Content-Type"] = "application/json"
@@ -112,17 +133,29 @@ class BearClawClient
 
     response = http.request(request)
 
-    unless response.code.to_i.between?(200, 299)
-      message = begin
-        parsed = JSON.parse(response.body.to_s)
-        parsed["message"] || parsed["detail"] || response.message
-      rescue JSON::ParserError
-        response.body.to_s.presence || response.message
-      end
-      raise RequestError.new(message, status: response.code.to_i, body: response.body.to_s)
-    end
+    raise_for_response_error!(response)
 
     response
+  rescue Timeout::Error
+    raise TimeoutError, "BearClaw did not respond in time"
+  rescue SocketError, IOError, SystemCallError, OpenSSL::SSL::SSLError => e
+    raise RequestError.new("BearClaw request failed: #{e.message}", status: 502, body: "")
+  end
+
+  def perform_stream(path)
+    validate_config!
+
+    uri  = build_uri(path)
+    http = build_http(uri)
+    request = build_request(Net::HTTP::Get, uri, accept: "text/event-stream")
+
+    http.request(request) do |response|
+      raise_for_response_error!(response)
+
+      response.read_body do |chunk|
+        yield chunk
+      end
+    end
   rescue Timeout::Error
     raise TimeoutError, "BearClaw did not respond in time"
   rescue SocketError, IOError, SystemCallError, OpenSSL::SSL::SSLError => e
@@ -146,5 +179,51 @@ class BearClawClient
 
   def authorization_token
     @identity_token || @token
+  end
+
+  def normalize_run_id(id)
+    value = id.to_s.strip
+    raise RequestError.new("Invalid run id", status: 400, body: "") unless /\A[a-zA-Z0-9_-]+\z/.match?(value)
+
+    value
+  end
+
+  def normalize_numeric_id(id, name:)
+    value = id.to_s.strip
+    raise RequestError.new("Invalid #{name}", status: 400, body: "") unless /\A[1-9]\d*\z/.match?(value)
+
+    value
+  end
+
+  def build_http(uri)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl      = uri.scheme == "https"
+    http.open_timeout = 10
+    http.read_timeout = 150
+    http
+  end
+
+  def build_request(http_class, uri, accept:)
+    request = http_class.new(uri)
+    request["Accept"] = accept
+    request["X-BearClaw-Actor"] = "bearclaw-web"
+    request["Authorization"] = "Bearer #{authorization_token}" if authorization_token
+    request
+  end
+
+  def raise_for_response_error!(response)
+    return if response.code.to_i.between?(200, 299)
+
+    message = begin
+      parsed = JSON.parse(response.body.to_s)
+      parsed["message"] || parsed["detail"] || response.message
+    rescue JSON::ParserError
+      response.body.to_s.presence || response.message
+    end
+    raise RequestError.new(message, status: response.code.to_i, body: response.body.to_s)
+  end
+
+  def sse_frame(event_name, payload)
+    "event: #{event_name}\ndata: #{JSON.dump(payload)}\n\n"
   end
 end

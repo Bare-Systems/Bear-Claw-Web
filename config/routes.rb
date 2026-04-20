@@ -15,6 +15,12 @@ Rails.application.routes.draw do
     resources :chat,   only: [ :index, :create ]
     resources :cron,   only: [ :index, :create, :update, :destroy ]
     resources :memory, only: [ :index, :destroy ]
+    resources :runs,   only: [ :index, :show ] do
+      member do
+        get :stream
+      end
+    end
+    resources :transcripts, only: [ :index, :show ]
   end
 
   # Security module — Ursa C2

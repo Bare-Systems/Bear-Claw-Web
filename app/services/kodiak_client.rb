@@ -16,65 +16,69 @@ class KodiakClient
     end
   end
 
-  def initialize(base_url:, token:)
+  def initialize(base_url:, token:, actor: nil, role: nil)
     @base_url = base_url.to_s.strip
     @token = token.to_s.strip
+    @actor = actor.to_s.presence
+    @role  = role.to_s.presence
   end
 
   # ── Engine ───────────────────────────────────────────────────────────────────
 
   def engine_status
-    request_json("/api/engine/status")
+    request_json("/api/v1/engine/status")
   end
 
   def start_engine(dry_run: true, interval: 60)
-    request_json_post("/api/engine/start", { dry_run: dry_run, interval: interval })
+    request_json_post("/api/v1/engine/start", { dry_run: dry_run, interval: interval })
   end
 
   def stop_engine
-    request_json_post("/api/engine/stop", {})
+    request_json_post("/api/v1/engine/stop", {})
   end
 
   # ── Portfolio ─────────────────────────────────────────────────────────────────
 
   def portfolio_summary
-    request_json("/api/portfolio/summary")
+    request_json("/api/v1/portfolio/summary")
   end
 
   def positions
-    request_json("/api/portfolio/positions")
+    request_json("/api/v1/portfolio/positions")
   end
 
   def movers(market_type: "stocks", limit: 10)
-    request_json("/api/portfolio/movers?market_type=#{market_type}&limit=#{limit}")
+    request_json("/api/v1/portfolio/movers?market_type=#{market_type}&limit=#{limit}")
   end
 
   # ── Strategies ────────────────────────────────────────────────────────────────
 
+  # Returns the array of strategy hashes (unwraps the StrategyListResponse envelope).
   def strategies
-    request_json("/api/strategies")
+    result = request_json("/api/v1/strategies")
+    result.is_a?(Hash) ? Array(result["strategies"]) : Array(result)
   end
 
   def strategy(id)
-    request_json("/api/strategies/#{id}")
+    request_json("/api/v1/strategies/#{id}")
   end
 
   def pause_strategy(id)
-    request_json_post("/api/strategies/#{id}/pause", {})
+    request_json_post("/api/v1/strategies/#{id}/pause", {})
   end
 
   def resume_strategy(id)
-    request_json_post("/api/strategies/#{id}/resume", {})
+    request_json_post("/api/v1/strategies/#{id}/resume", {})
   end
 
   # ── Orders ────────────────────────────────────────────────────────────────────
 
   def orders(show_all: false)
-    request_json("/api/orders?show_all=#{show_all}")
+    request_json("/api/v1/orders?show_all=#{show_all}")
   end
 
   def cancel_order(id)
-    request_delete("/api/orders/#{id}")
+    request_delete("/api/v1/orders/#{id}")
   end
 
   private
@@ -91,6 +95,7 @@ class KodiakClient
     request = Net::HTTP::Get.new(uri)
     request["Authorization"] = "Bearer #{@token}"
     request["Accept"] = "application/json"
+    apply_actor_headers!(request)
 
     perform(http, request)
   end
@@ -108,6 +113,7 @@ class KodiakClient
     request["Authorization"] = "Bearer #{@token}"
     request["Content-Type"] = "application/json"
     request["Accept"] = "application/json"
+    apply_actor_headers!(request)
     request.body = body.to_json
 
     perform(http, request)
@@ -125,20 +131,39 @@ class KodiakClient
     request = Net::HTTP::Delete.new(uri)
     request["Authorization"] = "Bearer #{@token}"
     request["Accept"] = "application/json"
+    apply_actor_headers!(request)
 
     perform(http, request)
   end
 
+  def apply_actor_headers!(request)
+    request["X-BearClaw-Actor"] = @actor if @actor
+    request["X-BearClaw-Role"]  = @role  if @role
+  end
+
   def perform(http, request)
     response = http.request(request)
+    body_str = response.body.to_s
+
     unless response.code.to_i.between?(200, 299)
-      raise RequestError.new(response.body.to_s.presence || response.message, status: response.code.to_i, body: response.body.to_s)
+      # Try to extract a human-readable message from the error envelope.
+      message = begin
+        parsed = JSON.parse(body_str)
+        parsed.dig("error", "message") || parsed["detail"] || body_str.presence || response.message
+      rescue JSON::ParserError
+        body_str.presence || response.message
+      end
+      raise RequestError.new(message, status: response.code.to_i, body: body_str)
     end
 
-    return nil if response.body.to_s.strip.empty?
-    JSON.parse(response.body.to_s)
+    return nil if body_str.strip.empty?
+
+    parsed = JSON.parse(body_str)
+
+    # Unwrap the Kodiak v1 response envelope: {"data": ..., "error": null, "meta": {...}}
+    parsed.is_a?(Hash) && parsed.key?("data") ? parsed["data"] : parsed
   rescue JSON::ParserError => e
-    raise RequestError.new("Invalid JSON from Kodiak: #{e.message}", status: 502, body: response&.body.to_s)
+    raise RequestError.new("Invalid JSON from Kodiak: #{e.message}", status: 502, body: body_str)
   rescue SocketError, IOError, SystemCallError, Timeout::Error, OpenSSL::SSL::SSLError => e
     raise RequestError.new("Kodiak request failed: #{e.message}", status: 502, body: "")
   end

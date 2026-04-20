@@ -72,4 +72,83 @@ module ApplicationHelper
   def bearclaw_chat_widget_embedded?
     controller_path == "agent/chat" && action_name == "index"
   end
+
+  def bearclaw_run_status_classes(status)
+    case status.to_s
+    when "done"
+      "bg-emerald-950 text-emerald-300 border border-emerald-800/60"
+    when "error"
+      "bg-red-950 text-red-300 border border-red-800/60"
+    else
+      "bg-sky-950 text-sky-300 border border-sky-800/60"
+    end
+  end
+
+  def bearclaw_run_timestamp(timestamp)
+    return "—" if timestamp.blank?
+
+    Time.zone.at(timestamp.to_i).strftime("%Y-%m-%d %H:%M:%S")
+  rescue ArgumentError, TypeError
+    timestamp.to_s
+  end
+
+  def bearclaw_run_event_classes(event_type)
+    case event_type.to_s
+    when "prompt"
+      "border-cyan-800/50 bg-cyan-950/20"
+    when "tool_call"
+      "border-amber-800/50 bg-amber-950/20"
+    when "tool_result"
+      "border-emerald-800/50 bg-emerald-950/20"
+    when "model_output", "done"
+      "border-violet-800/50 bg-violet-950/20"
+    when "error"
+      "border-red-800/50 bg-red-950/20"
+    else
+      "border-gray-800 bg-gray-950/40"
+    end
+  end
+
+  def bearclaw_run_event_title(event)
+    case event["type"].to_s
+    when "prompt"
+      "Prompt"
+    when "tool_call"
+      "Tool Call"
+    when "tool_result"
+      "Tool Result"
+    when "model_output"
+      "Model Output"
+    when "done"
+      "Run Complete"
+    when "error"
+      "Error"
+    else
+      event["type"].to_s.tr("_", " ").titleize
+    end
+  end
+
+  def bearclaw_run_event_lines(event)
+    lines = []
+    lines << [ "Tool", event["tool"] ] if event["tool"].present?
+    lines << [ "Arguments", event["arguments"] ] if event["arguments"].present?
+    lines << [ "Content", event["content"] ] if event["content"].present?
+    lines << [ "Message", event["message"] ] if event["message"].present?
+    lines << [ "Code", event["code"] ] if event["code"].present?
+    lines << [ "Success", event["success"] ? "true" : "false" ] if event.key?("success")
+    lines
+  end
+
+  def bearclaw_transcript_timestamp(timestamp)
+    bearclaw_run_timestamp(timestamp)
+  end
+
+  def bearclaw_transcript_body(value)
+    return "—" if value.blank?
+
+    parsed = JSON.parse(value)
+    JSON.pretty_generate(parsed)
+  rescue JSON::ParserError
+    value.to_s
+  end
 end

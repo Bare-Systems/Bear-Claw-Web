@@ -4,10 +4,18 @@
   <h1 class="text-2xl font-bold text-white mb-1">Agent</h1>
   <p class="text-gray-500 text-sm mb-8">BearClaw AI agent interface</p>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
     <%= link_to agent_chat_index_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
       <h2 class="text-white font-semibold mb-1">Chat</h2>
       <p class="text-gray-500 text-sm">Send commands to the BearClaw agent</p>
+    <% end %>
+    <%= link_to agent_runs_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
+      <h2 class="text-white font-semibold mb-1">Runs</h2>
+      <p class="text-gray-500 text-sm">Review recent agent executions and tool traces</p>
+    <% end %>
+    <%= link_to agent_transcripts_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
+      <h2 class="text-white font-semibold mb-1">Transcripts</h2>
+      <p class="text-gray-500 text-sm">Inspect redacted edge request and response transcripts</p>
     <% end %>
     <%= link_to agent_cron_index_path, class: "bg-gray-900 border border-gray-800 rounded-lg p-5 hover:border-gray-600 transition" do %>
       <h2 class="text-white font-semibold mb-1">Cron Tasks</h2>
