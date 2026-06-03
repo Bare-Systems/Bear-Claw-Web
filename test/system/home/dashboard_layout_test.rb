@@ -18,22 +18,23 @@ class Home::DashboardLayoutTest < ApplicationSystemTestCase
     HouseholdMembership.create!(household: household, user: @user)
 
     dashboard = Dashboard.fetch_or_create_for!(user: @user, context: :home, name: "Home Dashboard")
-    dashboard.update!(settings: dashboard.settings_hash.merge("columns" => 8))
+    dashboard.update!(settings: dashboard.settings_hash.merge("columns" => 80, "density_version" => 3))
+    base_span = dashboard.default_tile_span
 
     @first_tile = dashboard.dashboard_tiles.create!(
       title: "First Tile",
       row: 1,
       column: 1,
-      width: 2,
-      height: 2,
+      width: base_span,
+      height: base_span,
       position: 1
     )
     @second_tile = dashboard.dashboard_tiles.create!(
       title: "Second Tile",
       row: 1,
-      column: 3,
-      width: 2,
-      height: 2,
+      column: base_span + 1,
+      width: base_span,
+      height: base_span,
       position: 2
     )
   end
@@ -43,22 +44,38 @@ class Home::DashboardLayoutTest < ApplicationSystemTestCase
     visit home_root_path(edit: 1)
 
     assert_selector "[data-controller='dashboard-layout'][data-dashboard-layout-ready='true']"
-    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='size']", text: "2×2"
+    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='size']", text: "20×20"
 
-    move_tile(@first_tile.id, columns: 2, rows: 1)
+    move_tile(@first_tile.id, columns: 10, rows: 5)
 
-    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='row']", text: "2"
-    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='column']", text: "3"
+    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='row']", text: "6"
+    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='column']", text: "11"
 
-    resize_tile(@first_tile.id, columns: 2, rows: 2)
+    resize_tile(@first_tile.id, columns: 12, rows: 10)
 
-    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='size']", text: "4×4"
+    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='size']", text: "32×30"
 
     visit home_root_path(edit: 1)
 
-    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='row']", text: "2"
-    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='column']", text: "3"
-    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='size']", text: "4×4"
+    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='row']", text: "6"
+    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='column']", text: "11"
+    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='size']", text: "32×30"
+  end
+
+  test "resize handle can widen or heighten a tile independently" do
+    login_as_test_user
+    visit home_root_path(edit: 1)
+
+    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='size']", text: "20×20"
+
+    resize_tile(@first_tile.id, columns: 10, rows: 0)
+    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='size']", text: "30×20"
+
+    visit home_root_path(edit: 1)
+    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='size']", text: "30×20"
+
+    resize_tile(@first_tile.id, columns: 0, rows: 5)
+    assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='size']", text: "30×25"
   end
 
   private

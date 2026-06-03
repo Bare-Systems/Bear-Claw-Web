@@ -1,5 +1,5 @@
 class DashboardTile < ApplicationRecord
-  MAX_HEIGHT = 6
+  MAX_HEIGHT = 60
   DEFAULT_SPAN = 2
 
   belongs_to :dashboard

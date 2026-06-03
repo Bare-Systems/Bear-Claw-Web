@@ -54,6 +54,44 @@ module Home
       redirect_to home_root_path(edit: 1, dashboard: @dashboard.name), alert: e.record.errors.full_messages.to_sentence
     end
 
+    def quick_add
+      capability = DeviceCapability.find(quick_add_params.fetch(:device_capability_id))
+      history_snapshot = layout_history.snapshot(label: "#{capability.name} added")
+      position = @dashboard.dashboard_tiles.maximum(:position).to_i + 1
+      width = quick_add_tile_width(capability)
+      height = quick_add_tile_height(capability, width: width)
+      row, column = default_grid_position(position, span: width)
+
+      tile = nil
+      DashboardTile.transaction do
+        tile = @dashboard.dashboard_tiles.create!(
+          title: quick_add_tile_title(capability),
+          row: row,
+          column: column,
+          width: width,
+          height: height,
+          position: position,
+          settings: quick_add_tile_settings
+        )
+
+        tile.dashboard_widgets.create!(
+          device_capability: capability,
+          widget_type: capability.default_widget_type,
+          title: capability.name,
+          position: 1,
+          settings: quick_add_widget_settings(capability)
+        )
+
+        normalize_layout!(anchor_tile: tile)
+      end
+
+      layout_history.push!(snapshot: history_snapshot)
+      redirect_to home_root_path(edit: 1, dashboard: @dashboard.name), notice: "#{tile.display_title} added."
+    rescue KeyError, ActiveRecord::RecordNotFound, ActiveRecord::RecordInvalid => e
+      message = e.respond_to?(:record) ? e.record.errors.full_messages.to_sentence : e.message
+      redirect_to home_root_path(edit: 1, dashboard: @dashboard.name), alert: message
+    end
+
     def destroy
       history_snapshot = layout_history.snapshot(label: "Tile removed")
       @tile.destroy!
@@ -64,8 +102,7 @@ module Home
 
     private
 
-    def default_grid_position(position)
-      span = DashboardTile::DEFAULT_SPAN
+    def default_grid_position(position, span: default_tile_span)
       slots_per_row = [ @dashboard.columns / span, 1 ].max
       row = ((position - 1) / slots_per_row) * span + 1
       column = (((position - 1) % slots_per_row) * span) + 1
@@ -80,6 +117,7 @@ module Home
         Dashboard.fetch_or_create_for!(user: current_user, context: :home, name: "Home Dashboard")
       end
       @dashboard = Home::DashboardDensityUpgrader.new(dashboard: @dashboard).upgrade!
+      @dashboard = Home::CameraAspectBackfill.new(dashboard: @dashboard).run!
     end
 
     def quick_add_pack_catalog
@@ -125,8 +163,8 @@ module Home
         title: tile_params[:title].presence || existing_tile&.title || "Custom Tile",
         row: tile_params[:row].presence || existing_tile&.row || default_row,
         column: tile_params[:column].presence || existing_tile&.column || default_column,
-        width: tile_params[:width].presence || existing_tile&.width || DashboardTile::DEFAULT_SPAN,
-        height: tile_params[:height].presence || existing_tile&.height || DashboardTile::DEFAULT_SPAN,
+        width: tile_params[:width].presence || existing_tile&.width || default_tile_span,
+        height: tile_params[:height].presence || existing_tile&.height || default_tile_span,
         position: position || existing_tile&.position,
         settings: tile_settings(existing_settings)
       }
@@ -144,6 +182,40 @@ module Home
 
     def tile_params
       params.require(:dashboard_tile).permit(:title, :section, :row, :column, :width, :height)
+    end
+
+    def quick_add_params
+      params.require(:dashboard_quick_add).permit(:device_capability_id, :section)
+    end
+
+    def quick_add_tile_title(capability)
+      capability.device&.name.presence || capability.name
+    end
+
+    def quick_add_tile_settings
+      section = normalized_section(quick_add_params[:section])
+      section.present? ? { "section" => section } : {}
+    end
+
+    def quick_add_widget_settings(capability)
+      return {} unless capability.default_widget_type == "camera_feed"
+
+      { "refresh_interval_seconds" => 2 }
+    end
+
+    def default_tile_span
+      @dashboard.default_tile_span
+    end
+
+    def quick_add_tile_width(capability)
+      base_span = capability.default_widget_type == "camera_feed" ? 3 : 2
+      @dashboard.default_tile_span(base_span: base_span)
+    end
+
+    def quick_add_tile_height(capability, width:)
+      return @dashboard.default_camera_tile_height(base_width: 3) if capability.default_widget_type == "camera_feed"
+
+      [ width, DashboardTile::MAX_HEIGHT ].min
     end
   end
 end

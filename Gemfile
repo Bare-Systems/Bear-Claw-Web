@@ -19,6 +19,7 @@ gem "tailwindcss-rails", "~> 3.3.1"
 
 # Google OAuth2 via OmniAuth
 gem "omniauth-google-oauth2"
+gem "omniauth_openid_connect"
 gem "omniauth-rails_csrf_protection"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem

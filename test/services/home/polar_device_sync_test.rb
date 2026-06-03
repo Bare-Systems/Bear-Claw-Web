@@ -25,6 +25,21 @@ class Home::PolarDeviceSyncTest < ActiveSupport::TestCase
         "generated_at" => "2026-03-20T15:00:00Z",
         "components" => [ { "name" => "collector", "status" => "ok" } ] }
     end
+    fake_client.define_singleton_method(:weather_current) do
+      { "target_id" => "polar-home-01", "source" => "noaa",
+        "recorded_at" => "2026-03-20T14:51:00Z", "condition" => "Clear",
+        "temperature_c" => 11.1, "humidity_pct" => 63.3, "wind_speed_ms" => 5.4,
+        "pressure_hpa" => 1019.7, "quality" => "good", "stale" => false }
+    end
+    fake_client.define_singleton_method(:air_quality_current) do
+      { "target_id" => "polar-home-01", "source" => "airnow",
+        "recorded_at" => "2026-03-20T12:00:00Z", "overall_aqi" => 34,
+        "category" => "Good", "stale" => false,
+        "pollutants" => [
+          { "code" => "pm25", "name" => "PM2.5", "aqi" => 34, "category" => "Good", "primary" => true },
+          { "code" => "o3", "name" => "O3", "aqi" => 9, "category" => "Good", "primary" => false }
+        ] }
+    end
 
     Home::PolarDeviceSync.new(
       client:   fake_client,
@@ -54,6 +69,27 @@ class Home::PolarDeviceSyncTest < ActiveSupport::TestCase
     assert_equal 44.0,        hum_cap.state_hash["value"]
     assert_equal 2, DeviceCapability.where(device: indoor).count
     assert_equal 1, DeviceCapability.where(device: outdoor).count
+
+    # Outdoor weather device (NOAA) hangs off the station.
+    weather     = Device.find_by!(key: "polar-weather-polar-home-01")
+    weather_tmp = DeviceCapability.find_by!(device: weather, key: "metric_temperature")
+    assert_equal station,  weather.parent_device
+    assert_equal "outdoor", weather_tmp.configuration_hash["scope"]
+    assert_equal 11.1,      weather_tmp.state_hash["value"]
+    assert_equal "Clear",   weather.metadata["condition"]
+    assert DeviceCapability.exists?(device: weather, key: "metric_wind_speed")
+    assert DeviceCapability.exists?(device: weather, key: "metric_pressure")
+    assert DeviceCapability.exists?(device: weather, key: "metric_condition")
+
+    # Outdoor air-quality device (AirNow) — overall AQI capability only;
+    # per-pollutant sub-indices live in metadata.
+    air     = Device.find_by!(key: "polar-air-quality-polar-home-01")
+    aqi_cap = DeviceCapability.find_by!(device: air, key: "metric_aqi")
+    assert_equal 34,      aqi_cap.state_hash["value"]
+    assert_nil            aqi_cap.state_hash["display_value"]
+    assert_equal "aqi",   aqi_cap.configuration_hash["metric"]
+    assert_equal 1, DeviceCapability.where(device: air).count
+    assert_equal 2, air.metadata["pollutants"].size
   end
 
   test "connection status set to error and re-raises on client failure" do
@@ -89,6 +125,14 @@ class Home::PolarDeviceSyncTest < ActiveSupport::TestCase
     fake.define_singleton_method(:station_health) do
       { "station_id" => "homelab", "overall" => "ok",
         "generated_at" => "2026-03-20T15:00:00Z", "components" => [] }
+    end
+    fake.define_singleton_method(:weather_current) do
+      { "target_id" => "polar-home-01", "source" => "noaa", "condition" => "Clear",
+        "temperature_c" => 11.1, "humidity_pct" => 63.3, "quality" => "good", "stale" => false }
+    end
+    fake.define_singleton_method(:air_quality_current) do
+      { "target_id" => "polar-home-01", "source" => "airnow",
+        "overall_aqi" => 34, "category" => "Good", "stale" => false, "pollutants" => [] }
     end
     fake
   end

@@ -1,0 +1,93 @@
+<dialog
+  id="dashboard-tile-modal-<%= tile.id %>"
+  class="w-[min(38rem,calc(100vw-2rem))] max-w-3xl rounded-2xl border border-gray-800 bg-gray-950 p-0 text-gray-100 shadow-[0_28px_90px_rgba(0,0,0,0.55)] backdrop:bg-gray-950/80"
+  data-action="click->dashboard-modal#backdropClose"
+>
+  <div class="border-b border-gray-800 px-5 py-4">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-300/80">Edit Tile</p>
+        <h2 class="mt-1 text-lg font-semibold text-white"><%= tile.display_title %></h2>
+        <p class="mt-1 text-sm text-gray-500"><%= tile.section_name %> · <%= pluralize(tile.dashboard_widgets.size, "widget") %></p>
+      </div>
+      <button type="button" class="rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition hover:bg-gray-800" data-action="dashboard-modal#close">Close</button>
+    </div>
+  </div>
+
+  <div class="max-h-[34rem] space-y-5 overflow-y-auto px-5 py-5">
+    <section class="space-y-3 rounded-xl border border-gray-800 bg-gray-900/60 p-4">
+      <div class="flex items-center justify-between gap-3">
+        <h3 class="text-sm font-semibold text-white">Tile Settings</h3>
+        <%= button_to "Delete Tile", home_dashboard_tile_path(tile), method: :delete, class: "rounded-lg border border-red-800/70 px-3 py-1.5 text-xs font-medium text-red-200 transition hover:bg-red-950/60", data: { turbo_confirm: "Delete \"#{tile.display_title}\" and all its widgets?" } %>
+      </div>
+
+      <%= form_with model: tile, url: home_dashboard_tile_path(tile), method: :patch, class: "space-y-3" do |form| %>
+        <div>
+          <%= form.label :title, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+          <%= form.text_field :title, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        </div>
+        <div>
+          <%= form.label :section, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+          <%= select_tag "dashboard_tile[section]", options_for_select(dashboard_section_options(tile.dashboard), tile.section_name), class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <%= form.label :width, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+            <%= form.number_field :width, min: 1, max: tile.dashboard.columns, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          </div>
+          <div>
+            <%= form.label :height, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+            <%= form.number_field :height, min: 1, max: DashboardTile::MAX_HEIGHT, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <%= form.label :row, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+            <%= form.number_field :row, min: 1, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          </div>
+          <div>
+            <%= form.label :column, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+            <%= form.number_field :column, min: 1, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" class="rounded-lg border border-gray-700 px-3 py-2 text-sm font-medium text-gray-300 transition hover:bg-gray-800" data-action="dashboard-modal#close">Cancel</button>
+          <%= form.submit "Save Tile", class: "rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400" %>
+        </div>
+      <% end %>
+    </section>
+
+    <% tile.dashboard_widgets.each do |widget| %>
+      <section class="space-y-3 rounded-xl border border-gray-800 bg-gray-900/60 p-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-semibold text-white"><%= widget.display_title %></h3>
+            <p class="mt-1 text-xs text-gray-500"><%= widget.widget_type.humanize %></p>
+          </div>
+          <%= link_to "Remove Widget", home_dashboard_widget_path(widget), data: { turbo_method: :delete, turbo_confirm: "Remove this #{widget.widget_type.humanize} widget?" }, class: "rounded-lg border border-red-800/70 px-3 py-1.5 text-xs font-medium text-red-200 transition hover:bg-red-950/60" %>
+        </div>
+
+        <%= form_with model: widget, url: home_dashboard_widget_path(widget), method: :patch, class: "space-y-3" do |form| %>
+          <div>
+            <%= form.label :title, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+            <%= form.text_field :title, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          </div>
+          <div>
+            <%= form.label :position, class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+            <%= form.number_field :position, min: 1, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+          </div>
+          <% if widget.widget_type == "camera_feed" %>
+            <div>
+              <%= form.label :refresh_interval_seconds, "Refresh Interval (s)", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+              <%= form.number_field :refresh_interval_seconds, name: "dashboard_widget[refresh_interval_seconds]", value: widget.refresh_interval_seconds, min: 2, class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+            </div>
+          <% end %>
+          <div class="flex justify-end gap-2">
+            <button type="button" class="rounded-lg border border-gray-700 px-3 py-2 text-sm font-medium text-gray-300 transition hover:bg-gray-800" data-action="dashboard-modal#close">Cancel</button>
+            <%= form.submit "Save Widget", class: "rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400" %>
+          </div>
+        <% end %>
+      </section>
+    <% end %>
+  </div>
+</dialog>

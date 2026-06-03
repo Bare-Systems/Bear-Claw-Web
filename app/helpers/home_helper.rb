@@ -39,8 +39,12 @@ module HomeHelper
     ].join("; ")
   end
 
+  def dashboard_row_unit_rem(dashboard)
+    dashboard.row_unit_rem
+  end
+
   def dashboard_tile_mobile_span(tile)
-    return 2 if tile.width >= 4
+    return 2 if tile.width >= tile.dashboard.default_tile_span(base_span: 4)
     return 2 if tile.dashboard_widgets.any? { |widget| widget.widget_type == "camera_feed" }
 
     1
@@ -49,6 +53,28 @@ module HomeHelper
   def dashboard_tile_mobile_height(tile)
     max_height = tile.dashboard_widgets.any? { |widget| widget.widget_type == "camera_feed" } ? 3 : 2
     tile.height.clamp(1, max_height)
+  end
+
+  def dashboard_tile_body_classes(tile)
+    if dashboard_tile_chrome_free?(tile)
+      "flex min-h-0 flex-1 flex-col"
+    else
+      "flex-1 space-y-3 p-3 sm:p-4"
+    end
+  end
+
+  def dashboard_tile_chrome_free?(tile)
+    return false unless tile.dashboard_widgets.size == 1
+
+    %w[camera_feed air_quality_stat].include?(tile.dashboard_widgets.first.widget_type)
+  end
+
+  def dashboard_tile_full_bleed_camera?(tile)
+    dashboard_tile_chrome_free?(tile) && tile.dashboard_widgets.first.widget_type == "camera_feed"
+  end
+
+  def dashboard_tile_chrome_free_air_quality?(tile)
+    dashboard_tile_chrome_free?(tile) && tile.dashboard_widgets.first.widget_type == "air_quality_stat"
   end
 
   def dashboard_section_options(dashboard)
@@ -169,6 +195,28 @@ module HomeHelper
     Home::DashboardQuickAddPackCatalog.new(capabilities: capabilities).available_packs
   end
 
+  # Server-side seed for a camera tile's feed aspect ratio (width / height).
+  # The camera-feed Stimulus controller refines this with the frame's real
+  # natural dimensions once the first snapshot loads; until then this default
+  # gives the resize handle a sane shape to lock against. 16:9 covers the common
+  # Koala camera output.
+  def dashboard_camera_widget_aspect(tile)
+    widget = tile.dashboard_widgets.detect { |w| w.widget_type == "camera_feed" }
+    stored = widget&.settings_hash&.dig("feed_aspect").to_f
+    stored.positive? ? stored.round(4) : (16.0 / 9.0).round(4)
+  end
+
+  def dashboard_camera_refresh_interval_seconds(widget)
+    interval = widget.refresh_interval_seconds
+
+    # Existing dashboard camera tiles were provisioned at 4s, which feels too
+    # sluggish for a "live" wall. Nudge that legacy default to 2s while still
+    # honoring any explicit faster/slower per-widget override.
+    return 2 if widget.widget_type == "camera_feed" && interval == 4
+
+    interval
+  end
+
   def dashboard_layout_preset_saved_at(preset)
     timestamp = preset["saved_at"].presence
     return "unsaved" if timestamp.blank?
@@ -204,6 +252,12 @@ module HomeHelper
     status = capability.status_label.to_s.downcase
     return :offline if DASHBOARD_OFFLINE_STATUSES.include?(status)
     return :stale if DASHBOARD_STALE_STATUSES.include?(status)
+
+    # Camera feeds are health-checked by frame capture, not scene activity. A
+    # quiet scene (no person/package) is NOT stale — only a real capture failure
+    # (status unavailable/degraded, handled above) counts. Detection events are
+    # surfaced separately via Koala alerts, not via widget freshness.
+    return :healthy if widget.widget_type == "camera_feed"
 
     observed_at = dashboard_widget_observed_at(widget)
     return :unknown if observed_at.blank?
@@ -325,6 +379,42 @@ module HomeHelper
 
   def switch_state_label(capability)
     capability.switch_on? ? "On" : "Off"
+  end
+
+  # Detection alerts (person/package) sourced from Koala's /admin/alerts.
+  def koala_alert_headline(alert)
+    label = alert["label"].to_s
+    noun = label.presence&.humanize || "Motion"
+    "#{noun} detected"
+  end
+
+  def koala_alert_meta(alert)
+    parts = []
+    zone = alert["zone_id"].to_s
+    parts << zone.humanize if zone.present?
+    parts << alert["camera_id"] if alert["camera_id"].present?
+    if (confidence = alert["confidence"]).present?
+      parts << "#{(confidence.to_f * 100).round}%"
+    end
+    parts.join(" · ")
+  end
+
+  def koala_alert_time(alert)
+    observed = dashboard_parse_observed_at(alert["observed_at"])
+    return "just now" if observed.blank?
+
+    "#{time_ago_in_words(observed)} ago"
+  end
+
+  def koala_alert_badge_classes(alert)
+    case alert["label"].to_s
+    when "person"
+      "border-sky-700/70 bg-sky-950/70 text-sky-200"
+    when "package"
+      "border-emerald-700/70 bg-emerald-950/70 text-emerald-200"
+    else
+      "border-gray-700/70 bg-gray-950/70 text-gray-200"
+    end
   end
 
   private

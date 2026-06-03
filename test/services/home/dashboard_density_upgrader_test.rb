@@ -18,21 +18,21 @@ class Home::DashboardDensityUpgraderTest < ActiveSupport::TestCase
     @tile_c = @dashboard.dashboard_tiles.create!(title: "C", row: 2, column: 1, width: 1, height: 2, position: 3)
   end
 
-  test "upgrades a legacy 4-column layout to an 8-column dense grid" do
+  test "upgrades a legacy 4-column layout to an 80-column fine-grain grid" do
     Home::DashboardDensityUpgrader.new(dashboard: @dashboard).upgrade!
 
-    assert_equal 8, @dashboard.reload.columns
-    assert_equal [ 1, 1, 2, 2 ], [ @tile_a.reload.row, @tile_a.column, @tile_a.width, @tile_a.height ]
-    assert_equal [ 1, 3, 4, 2 ], [ @tile_b.reload.row, @tile_b.column, @tile_b.width, @tile_b.height ]
-    assert_equal [ 1, 7, 2, 4 ], [ @tile_c.reload.row, @tile_c.column, @tile_c.width, @tile_c.height ]
+    assert_equal 80, @dashboard.reload.columns
+    assert_equal [ 1, 1, 20, 20 ], [ @tile_a.reload.row, @tile_a.column, @tile_a.width, @tile_a.height ]
+    assert_equal [ 1, 21, 40, 20 ], [ @tile_b.reload.row, @tile_b.column, @tile_b.width, @tile_b.height ]
+    assert_equal [ 1, 61, 20, 40 ], [ @tile_c.reload.row, @tile_c.column, @tile_c.width, @tile_c.height ]
   end
 
   test "does not re-upgrade an already dense dashboard" do
-    @dashboard.update!(settings: { "columns" => 8, "density_version" => 2 })
+    @dashboard.update!(settings: { "columns" => 80, "density_version" => 3 })
 
     Home::DashboardDensityUpgrader.new(dashboard: @dashboard).upgrade!
 
     assert_equal [ 1, 1, 1, 1 ], [ @tile_a.reload.row, @tile_a.column, @tile_a.width, @tile_a.height ]
-    assert_equal 8, @dashboard.reload.columns
+    assert_equal 80, @dashboard.reload.columns
   end
 end

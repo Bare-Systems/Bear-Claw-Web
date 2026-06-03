@@ -11,6 +11,9 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.0].define(version: 2026_03_24_000002) do
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "pg_catalog.plpgsql"
+
   create_table "dashboard_tiles", force: :cascade do |t|
     t.bigint "dashboard_id", null: false
     t.string "title"
@@ -85,8 +88,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_24_000002) do
   end
 
   create_table "household_memberships", force: :cascade do |t|
-    t.integer "household_id", null: false
-    t.integer "user_id", null: false
+    t.bigint "household_id", null: false
+    t.bigint "user_id", null: false
     t.string "role", default: "member", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -96,7 +99,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_24_000002) do
   end
 
   create_table "households", force: :cascade do |t|
-    t.integer "owner_id", null: false
+    t.bigint "owner_id", null: false
     t.string "name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -117,9 +120,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_24_000002) do
   end
 
   create_table "invites", force: :cascade do |t|
-    t.integer "household_id", null: false
-    t.integer "created_by_id", null: false
-    t.integer "accepted_by_id"
+    t.bigint "household_id", null: false
+    t.bigint "created_by_id", null: false
+    t.bigint "accepted_by_id"
     t.string "token", null: false
     t.string "email"
     t.string "status", default: "pending", null: false

@@ -100,6 +100,33 @@ class HomeHelperTest < ActionView::TestCase
     end
   end
 
+  test "camera feed widget is healthy on a quiet scene and offline only on capture failure" do
+    travel_to Time.zone.parse("2026-04-11 10:00:00") do
+      camera_capability = DeviceCapability.create!(
+        device: @capability.device,
+        key: "quiet-camera",
+        name: "Quiet Camera",
+        capability_type: "camera_feed",
+        configuration: { "camera_id" => "cam-quiet" },
+        state: { "status" => "available", "last_seen_at" => 9.hours.ago.iso8601 }
+      )
+      camera_widget = @tile.dashboard_widgets.create!(
+        device_capability: camera_capability,
+        widget_type: "camera_feed",
+        title: "Quiet Camera Widget",
+        position: 3
+      )
+
+      # An old frame timestamp must NOT mark a camera stale — silence is healthy.
+      assert_equal :healthy, dashboard_widget_health_state(camera_widget)
+      assert_nil dashboard_widget_alert_state(camera_widget)
+
+      # A real frame-capture failure surfaces as offline.
+      camera_capability.update!(state: { "status" => "unavailable" })
+      assert_equal :offline, dashboard_widget_health_state(camera_widget)
+    end
+  end
+
   test "derives compact mobile spans and heights from tile content" do
     assert_equal 1, dashboard_tile_mobile_span(@tile)
     assert_equal 2, dashboard_tile_mobile_height(@tile)

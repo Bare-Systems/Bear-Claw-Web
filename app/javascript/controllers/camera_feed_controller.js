@@ -16,6 +16,20 @@ class CameraFeedController extends Controller {
   loaded() {
     this.imageTarget.classList.remove("hidden")
     this.placeholderTarget.classList.add("hidden")
+    this.reportAspect()
+  }
+
+  // Publish the feed's true pixel aspect ratio onto the owning dashboard tile so
+  // the layout controller can lock camera-tile resizing to the feed's shape.
+  reportAspect() {
+    const width = this.imageTarget.naturalWidth
+    const height = this.imageTarget.naturalHeight
+    if (!width || !height) return
+
+    const tile = this.element.closest("[data-dashboard-layout-target='item']")
+    if (!tile) return
+
+    tile.dataset.feedAspect = (width / height).toFixed(4)
   }
 
   failed() {

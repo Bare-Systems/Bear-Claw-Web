@@ -14,7 +14,7 @@ class Home::DashboardTilesControllerTest < ActionController::TestCase
     )
     @request.session[:user_id] = @user.id
     @dashboard = Dashboard.fetch_or_create_for!(user: @user, context: :home, name: "Home Dashboard")
-    @dashboard.update!(settings: @dashboard.settings_hash.merge("columns" => 8))
+    @dashboard.update!(settings: @dashboard.settings_hash.merge("columns" => 80, "density_version" => 3))
   end
 
   test "creates a custom tile" do
@@ -37,6 +37,58 @@ class Home::DashboardTilesControllerTest < ActionController::TestCase
     assert_equal "Climate", tile.title
     assert_equal "Operations", tile.settings_hash["section"]
     assert_equal 2, tile.width
+  end
+
+  test "quick add creates a tile with a widget from a searched capability" do
+    provider = ServiceProvider.create!(key: "koala", name: "Koala", provider_type: "hybrid")
+    connection = ServiceConnection.create!(
+      service_provider: provider,
+      key: "koala-quick-add-test",
+      name: "Koala Main",
+      adapter: "koala",
+      credential_strategy: "environment",
+      status: "online",
+      base_url: "http://koala.test"
+    )
+    device = Device.create!(
+      service_connection: connection,
+      user: @user,
+      key: "quick-add-camera",
+      name: "Front Door Cam",
+      category: "camera",
+      source_kind: "physical",
+      source_identifier: "cam_1",
+      status: "available"
+    )
+    capability = DeviceCapability.create!(
+      device: device,
+      key: "front-door-feed",
+      name: "Front Door Feed",
+      capability_type: "camera_feed",
+      configuration: { "camera_id" => "cam_1" },
+      state: { "status" => "available" }
+    )
+
+    assert_difference("DashboardTile.count", 1) do
+      assert_difference("DashboardWidget.count", 1) do
+        post :quick_add, params: {
+          dashboard_id: @dashboard.id,
+          dashboard_quick_add: {
+            device_capability_id: capability.id,
+            section: "Security"
+          }
+        }
+      end
+    end
+
+    tile = DashboardTile.order(:id).last
+
+    assert_redirected_to home_root_path(edit: 1, dashboard: @dashboard.name)
+    assert_equal "Front Door Cam", tile.title
+    assert_equal "Security", tile.settings_hash["section"]
+    assert_equal capability.id, tile.dashboard_widgets.first.device_capability_id
+    assert_equal "camera_feed", tile.dashboard_widgets.first.widget_type
+    assert_equal 2, tile.dashboard_widgets.first.settings_hash["refresh_interval_seconds"]
   end
 
   test "updates tile layout over json and returns normalized positions" do

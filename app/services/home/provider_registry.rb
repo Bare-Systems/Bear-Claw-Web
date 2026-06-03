@@ -68,6 +68,20 @@ module Home
         ]
       },
       {
+        key:          "x",
+        name:         "X",
+        tagline:      "Authorize your X account so Kodiak can read your home timeline and turn followed-account posts into deterministic trade alerts.",
+        category:     "Markets",
+        brand_color:  "#111827",
+        brand_text:   "#ffffff",
+        logo_letter:  "X",
+        docs_url:     "https://console.x.com",
+        backend:      :kodiak,
+        managed_by:   nil,
+        oauth_provider: true,
+        credential_fields: []
+      },
+      {
         key:          "custom",
         name:         "Custom",
         tagline:      "Connect any HTTP service using a base URL and bearer token.",

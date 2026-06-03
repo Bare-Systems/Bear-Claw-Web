@@ -18,6 +18,11 @@ require "rails/test_unit/railtie"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+if defined?(Dotenv)
+  shared_env = File.expand_path("../../.env", __dir__)
+  Dotenv.load(shared_env) if File.file?(shared_env)
+end
+
 module BearClawWeb
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.

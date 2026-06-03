@@ -18,10 +18,16 @@ class SyncDashboardJob < ApplicationJob
     user = User.find_by(id: user_id)
     return Rails.logger.warn("[SyncDashboardJob] Unknown user #{user_id}") unless user
 
-    dashboard = Dashboard.where(user: user, context: "home").first
-    return Rails.logger.warn("[SyncDashboardJob] No home dashboard for user #{user_id}") unless dashboard
+    household = Household.joins(:household_memberships)
+      .where(household_memberships: { user_id: user.id })
+      .first || Household.first
+    return Rails.logger.warn("[SyncDashboardJob] No household for user #{user_id}") unless household
 
-    errors = run_syncs
+    dashboard_owner = household.owner
+    dashboard = Dashboard.where(user: dashboard_owner, context: "home").first
+    return Rails.logger.warn("[SyncDashboardJob] No home dashboard for household owner #{dashboard_owner.id}") unless dashboard
+
+    errors = run_syncs(dashboard_owner)
 
     dashboard = Dashboard.includes(
       dashboard_tiles: { dashboard_widgets: { device_capability: :device } }
@@ -34,18 +40,18 @@ class SyncDashboardJob < ApplicationJob
 
   # ── Sync ─────────────────────────────────────────────────────────────────
 
-  def run_syncs
+  def run_syncs(dashboard_owner)
     errors = {}
 
     begin
-      sync_koala
+      sync_koala(dashboard_owner)
     rescue KoalaClient::Error => e
       Rails.logger.warn("[SyncDashboardJob] Koala: #{e.message}")
       errors[:koala] = e.message
     end
 
     begin
-      sync_polar
+      sync_polar(dashboard_owner)
     rescue PolarClient::Error => e
       Rails.logger.warn("[SyncDashboardJob] Polar: #{e.message}")
       errors[:polar] = e.message
@@ -61,21 +67,23 @@ class SyncDashboardJob < ApplicationJob
     errors
   end
 
-  def sync_koala
+  def sync_koala(dashboard_owner)
     return if ENV["KOALA_URL"].blank?
 
     Home::KoalaDeviceSync.new(
       client:   KoalaClient.new(base_url: ENV["KOALA_URL"], token: ENV["KOALA_TOKEN"]),
-      base_url: ENV["KOALA_URL"]
+      base_url: ENV["KOALA_URL"],
+      user:     dashboard_owner
     ).sync!
   end
 
-  def sync_polar
+  def sync_polar(dashboard_owner)
     return if ENV["POLAR_URL"].blank? || ENV["POLAR_TOKEN"].blank?
 
     Home::PolarDeviceSync.new(
       client:   PolarClient.new(base_url: ENV["POLAR_URL"], token: ENV["POLAR_TOKEN"]),
-      base_url: ENV["POLAR_URL"]
+      base_url: ENV["POLAR_URL"],
+      user:     dashboard_owner
     ).sync!
   end
 

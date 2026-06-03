@@ -1,7 +1,12 @@
+<% full_bleed_camera = dashboard_tile_full_bleed_camera?(tile) %>
+<% chrome_free_air_quality = dashboard_tile_chrome_free_air_quality?(tile) %>
+<% chrome_free_tile = dashboard_tile_chrome_free?(tile) %>
+<% tile_style = dashboard_tile_style(tile) %>
+<% tile_style = "#{tile_style}; touch-action: none;" if edit_mode && chrome_free_tile %>
 <article
   id="tile-<%= tile.id %>"
-  class="dashboard-tile flex flex-col overflow-hidden rounded-xl border border-gray-800 bg-gray-950/90 shadow-[0_18px_60px_rgba(15,23,42,0.32)] transition-[grid-column,grid-row,border-color,box-shadow,background-color,opacity] sm:rounded-2xl"
-  style="<%= dashboard_tile_style(tile) %>"
+  class="dashboard-tile relative flex flex-col overflow-hidden rounded-xl border border-gray-800 bg-gray-950/90 shadow-[0_18px_60px_rgba(15,23,42,0.32)] transition-[grid-column,grid-row,border-color,box-shadow,background-color,opacity] sm:rounded-2xl <%= edit_mode && chrome_free_tile ? 'cursor-grab select-none active:cursor-grabbing' : '' %>"
+  style="<%= tile_style %>"
   data-dashboard-layout-target="item"
   data-tile-id="<%= tile.id %>"
   data-position="<%= tile.position %>"
@@ -11,36 +16,61 @@
   data-height="<%= tile.height %>"
   data-mobile-span="<%= dashboard_tile_mobile_span(tile) %>"
   data-mobile-height="<%= dashboard_tile_mobile_height(tile) %>"
+  <% if full_bleed_camera %>data-tile-kind="camera" data-feed-aspect="<%= dashboard_camera_widget_aspect(tile) %>"<% end %>
   data-update-url="<%= home_dashboard_tile_path(tile, format: :json) %>"
+  <% if edit_mode && chrome_free_tile %>
+    data-action="pointerdown->dashboard-layout#startMove"
+  <% end %>
 >
-  <div
-    class="flex items-start justify-between gap-3 border-b border-gray-800 px-3 py-3 sm:px-4 sm:py-4 <%= edit_mode ? 'cursor-grab select-none active:cursor-grabbing' : '' %>"
-    <% if edit_mode %>
-      data-action="pointerdown->dashboard-layout#startMove"
-      style="touch-action: none;"
-    <% end %>
-  >
-    <div>
-      <h3 class="text-sm font-semibold text-white"><%= tile.display_title %></h3>
+  <% unless chrome_free_tile %>
+    <div
+      class="flex items-start justify-between gap-3 border-b border-gray-800 px-3 py-3 sm:px-4 sm:py-4 <%= edit_mode ? 'cursor-grab select-none active:cursor-grabbing' : '' %>"
       <% if edit_mode %>
-        <p class="mt-1 text-xs text-gray-500" data-dashboard-layout-target="meta">
-          Row <span data-dashboard-layout-field="row"><%= tile.row %></span> · Column <span data-dashboard-layout-field="column"><%= tile.column %></span> · Size <span data-dashboard-layout-field="size"><%= "#{tile.width}×#{tile.height}" %></span> · <%= pluralize(tile.dashboard_widgets.size, "widget") %>
-        </p>
+        data-action="pointerdown->dashboard-layout#startMove"
+        style="touch-action: none;"
       <% end %>
+    >
+      <div>
+        <h3 class="text-sm font-semibold text-white"><%= tile.display_title %></h3>
+        <% if edit_mode %>
+          <p class="mt-1 text-xs text-gray-500" data-dashboard-layout-target="meta">
+            Row <span data-dashboard-layout-field="row"><%= tile.row %></span> · Column <span data-dashboard-layout-field="column"><%= tile.column %></span> · Size <span data-dashboard-layout-field="size"><%= "#{tile.width}×#{tile.height}" %></span> · <%= pluralize(tile.dashboard_widgets.size, "widget") %>
+          </p>
+        <% end %>
+      </div>
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <span class="rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide sm:px-3 sm:text-[11px] <%= dashboard_health_badge_classes(dashboard_tile_health_state(tile)) %>"><%= dashboard_tile_health_label(tile) %></span>
+        <% if edit_mode %>
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-800/70 bg-sky-950/60 text-sky-200 transition hover:bg-sky-900/70"
+            data-action="dashboard-modal#open"
+            data-dashboard-modal-dialog-id-param="dashboard-tile-modal-<%= tile.id %>"
+            aria-label="Edit <%= tile.display_title %>"
+          >
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-8.9 8.9a2 2 0 0 1-.878.513l-2.879.822a.75.75 0 0 1-.927-.927l.822-2.879a2 2 0 0 1 .513-.878l8.9-8.9ZM12.525 5.707 5.576 12.656a.5.5 0 0 0-.128.218l-.443 1.549 1.55-.443a.5.5 0 0 0 .217-.128l6.949-6.95-1.196-1.195Z" />
+            </svg>
+          </button>
+          <%= button_to home_dashboard_tile_path(tile),
+            method: :delete,
+            class: "inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-800/70 bg-red-950/40 text-red-200 transition hover:bg-red-950/70",
+            data: { turbo_confirm: "Delete \"#{tile.display_title}\" and all its widgets?" },
+            form_class: "inline" do %>
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M8.75 2.5a1.75 1.75 0 0 0-1.75 1.75V5H4.75a.75.75 0 0 0 0 1.5h.386l.772 9.267A2.25 2.25 0 0 0 8.15 17.75h3.7a2.25 2.25 0 0 0 2.242-1.983l.772-9.267h.386a.75.75 0 0 0 0-1.5H13V4.25A1.75 1.75 0 0 0 11.25 2.5h-2.5ZM8.5 5V4.25a.25.25 0 0 1 .25-.25h2.5a.25.25 0 0 1 .25.25V5h-3Zm.75 3a.75.75 0 0 0-1.5 0v5.25a.75.75 0 0 0 1.5 0V8Zm3 0a.75.75 0 0 0-1.5 0v5.25a.75.75 0 0 0 1.5 0V8Z" clip-rule="evenodd" />
+            </svg>
+          <% end %>
+          <span class="rounded-full border border-sky-800/70 bg-sky-950/60 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-sky-200 sm:px-3 sm:text-[11px]">drag header</span>
+        <% end %>
+      </div>
     </div>
-    <div class="flex flex-wrap items-center justify-end gap-2">
-      <span class="rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide sm:px-3 sm:text-[11px] <%= dashboard_health_badge_classes(dashboard_tile_health_state(tile)) %>"><%= dashboard_tile_health_label(tile) %></span>
-      <% if edit_mode %>
-        <span class="rounded-full border border-sky-800/70 bg-sky-950/60 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-sky-200 sm:px-3 sm:text-[11px]">drag header</span>
-        <span class="rounded-full border border-sky-800/70 bg-sky-950/60 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-sky-200 sm:text-[11px]">editable</span>
-      <% end %>
-    </div>
-  </div>
+  <% end %>
 
-  <div class="flex-1 space-y-3 p-3 sm:p-4">
+  <div class="<%= dashboard_tile_body_classes(tile) %>">
     <% if tile.dashboard_widgets.any? %>
       <% tile.dashboard_widgets.each do |widget| %>
-        <%= render dashboard_widget_partial(widget), widget: widget %>
+        <%= render dashboard_widget_partial(widget), widget: widget, tile: tile, edit_mode: edit_mode %>
       <% end %>
     <% else %>
       <div class="flex h-full min-h-44 items-center justify-center rounded-xl border border-dashed border-gray-700 bg-gray-900/70 px-4 text-center">
@@ -52,7 +82,66 @@
     <% end %>
   </div>
 
-  <% if edit_mode %>
+  <% if full_bleed_camera %>
+    <div class="pointer-events-none absolute inset-x-3 top-3 z-20 flex items-start justify-end gap-2">
+      <span class="pointer-events-auto rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide sm:px-3 sm:text-[11px] <%= dashboard_health_badge_classes(dashboard_tile_health_state(tile)) %>"><%= dashboard_tile_health_label(tile) %></span>
+      <% if edit_mode %>
+        <button
+          type="button"
+          class="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-800/70 bg-sky-950/75 text-sky-200 transition hover:bg-sky-900/85"
+          data-action="dashboard-modal#open"
+          data-dashboard-modal-dialog-id-param="dashboard-tile-modal-<%= tile.id %>"
+          aria-label="Edit <%= tile.display_title %>"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-8.9 8.9a2 2 0 0 1-.878.513l-2.879.822a.75.75 0 0 1-.927-.927l.822-2.879a2 2 0 0 1 .513-.878l8.9-8.9ZM12.525 5.707 5.576 12.656a.5.5 0 0 0-.128.218l-.443 1.549 1.55-.443a.5.5 0 0 0 .217-.128l6.949-6.95-1.196-1.195Z" />
+          </svg>
+        </button>
+        <%= button_to home_dashboard_tile_path(tile),
+          method: :delete,
+          class: "pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-800/70 bg-red-950/60 text-red-200 transition hover:bg-red-950/85",
+          data: { turbo_confirm: "Delete \"#{tile.display_title}\" and all its widgets?" },
+          form_class: "inline" do %>
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M8.75 2.5a1.75 1.75 0 0 0-1.75 1.75V5H4.75a.75.75 0 0 0 0 1.5h.386l.772 9.267A2.25 2.25 0 0 0 8.15 17.75h3.7a2.25 2.25 0 0 0 2.242-1.983l.772-9.267h.386a.75.75 0 0 0 0-1.5H13V4.25A1.75 1.75 0 0 0 11.25 2.5h-2.5ZM8.5 5V4.25a.25.25 0 0 1 .25-.25h2.5a.25.25 0 0 1 .25.25V5h-3Zm.75 3a.75.75 0 0 0-1.5 0v5.25a.75.75 0 0 0 1.5 0V8Zm3 0a.75.75 0 0 0-1.5 0v5.25a.75.75 0 0 0 1.5 0V8Z" clip-rule="evenodd" />
+          </svg>
+        <% end %>
+      <% end %>
+    </div>
+  <% elsif chrome_free_air_quality && edit_mode %>
+    <div class="pointer-events-none absolute inset-x-3 top-3 z-20 flex items-start justify-end gap-2">
+      <button
+        type="button"
+        class="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-800/70 bg-sky-950/75 text-sky-200 transition hover:bg-sky-900/85"
+        data-action="dashboard-modal#open"
+        data-dashboard-modal-dialog-id-param="dashboard-tile-modal-<%= tile.id %>"
+        aria-label="Edit <%= tile.display_title %>"
+      >
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-8.9 8.9a2 2 0 0 1-.878.513l-2.879.822a.75.75 0 0 1-.927-.927l.822-2.879a2 2 0 0 1 .513-.878l8.9-8.9ZM12.525 5.707 5.576 12.656a.5.5 0 0 0-.128.218l-.443 1.549 1.55-.443a.5.5 0 0 0 .217-.128l6.949-6.95-1.196-1.195Z" />
+        </svg>
+      </button>
+      <%= button_to home_dashboard_tile_path(tile),
+        method: :delete,
+        class: "pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-red-800/70 bg-red-950/60 text-red-200 transition hover:bg-red-950/85",
+        data: { turbo_confirm: "Delete \"#{tile.display_title}\" and all its widgets?" },
+        form_class: "inline" do %>
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M8.75 2.5a1.75 1.75 0 0 0-1.75 1.75V5H4.75a.75.75 0 0 0 0 1.5h.386l.772 9.267A2.25 2.25 0 0 0 8.15 17.75h3.7a2.25 2.25 0 0 0 2.242-1.983l.772-9.267h.386a.75.75 0 0 0 0-1.5H13V4.25A1.75 1.75 0 0 0 11.25 2.5h-2.5ZM8.5 5V4.25a.25.25 0 0 1 .25-.25h2.5a.25.25 0 0 1 .25.25V5h-3Zm.75 3a.75.75 0 0 0-1.5 0v5.25a.75.75 0 0 0 1.5 0V8Zm3 0a.75.75 0 0 0-1.5 0v5.25a.75.75 0 0 0 1.5 0V8Z" clip-rule="evenodd" />
+        </svg>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if edit_mode && chrome_free_tile %>
+    <button
+      type="button"
+      class="absolute bottom-0 right-0 z-20 h-10 w-10 cursor-nwse-resize bg-transparent"
+      data-action="pointerdown->dashboard-layout#startResize"
+      style="touch-action: none;"
+      aria-label="Resize <%= tile.display_title %>"
+    ></button>
+  <% elsif edit_mode %>
     <div class="flex items-center justify-end border-t border-gray-800 px-3 py-2 sm:px-4">
       <button
         type="button"

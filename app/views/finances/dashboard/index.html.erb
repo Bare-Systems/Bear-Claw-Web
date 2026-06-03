@@ -18,7 +18,9 @@
     <div class="bg-red-900/40 border border-red-800 text-red-300 rounded-xl p-4 text-sm">
       <%= @error %>
     </div>
-  <% else %>
+<% else %>
+    <% direct_signal_alerts = Array(@signal_alerts).select { |alert| alert["bucket"] == "direct" } %>
+    <% inference_signal_alerts = Array(@signal_alerts).select { |alert| alert["bucket"] == "needs_inference" } %>
 
     <%# Engine status banner %>
     <% if @engine_status %>
@@ -47,6 +49,29 @@
         <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
           <p class="text-gray-500 text-xs uppercase tracking-wide mb-1">Buying Power</p>
           <p class="text-2xl font-bold text-white"><%= number_to_currency(@portfolio["buying_power"] || @portfolio.dig("account", "buying_power")) %></p>
+        </div>
+      </div>
+    <% end %>
+
+    <% if @signal_overview.present? %>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <p class="text-gray-500 text-xs uppercase tracking-wide mb-1">Signal Monitor</p>
+          <p class="text-2xl font-bold text-white"><%= @signal_overview["enabled"] ? "Online" : "Disabled" %></p>
+          <p class="mt-2 text-sm text-gray-400">
+            <%= pluralize(@signal_overview["active_source_count"].to_i, "active source") %> ·
+            every <%= @signal_overview["poll_interval_seconds"] %>s
+          </p>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <p class="text-gray-500 text-xs uppercase tracking-wide mb-1">Direct Alerts</p>
+          <p class="text-2xl font-bold text-emerald-300"><%= @signal_overview["direct_alert_count"] %></p>
+          <p class="mt-2 text-sm text-gray-400">Last <%= @signal_overview["recent_window_hours"] %>h deterministic buy/sell signals</p>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <p class="text-gray-500 text-xs uppercase tracking-wide mb-1">Needs Inference</p>
+          <p class="text-2xl font-bold text-amber-300"><%= @signal_overview["needs_inference_count"] %></p>
+          <p class="mt-2 text-sm text-gray-400">Posts that BearClaw can review later if needed</p>
         </div>
       </div>
     <% end %>
@@ -87,6 +112,112 @@
     <% elsif @positions %>
       <div class="bg-gray-900 border border-gray-800 rounded-xl px-5 py-8 text-center text-gray-500 text-sm">
         No open positions.
+      </div>
+    <% end %>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-800 flex items-center justify-between">
+          <h2 class="text-white font-semibold">Direct Signal Alerts</h2>
+          <span class="text-xs uppercase tracking-[0.18em] text-emerald-300"><%= pluralize(direct_signal_alerts.size, "alert") %></span>
+        </div>
+        <% if direct_signal_alerts.present? %>
+          <div class="divide-y divide-gray-800">
+            <% direct_signal_alerts.each do |alert| %>
+              <div class="px-5 py-4 space-y-2">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <p class="text-sm font-semibold text-white"><%= alert["title"] %></p>
+                    <p class="mt-0.5 text-xs text-gray-400"><%= alert["source_label"] || alert["account"] %> · <%= alert["reason"] %></p>
+                  </div>
+                  <span class="shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] <%= alert["action"] == "buy" ? "border-emerald-500/30 bg-emerald-950/40 text-emerald-200" : "border-rose-500/30 bg-rose-950/40 text-rose-200" %>">
+                    <%= alert["action"] %>
+                  </span>
+                </div>
+                <p class="text-sm text-gray-200"><%= truncate(alert["text"].to_s, length: 180) %></p>
+                <div class="flex items-center justify-between gap-4 text-xs text-gray-500">
+                  <span><%= alert["symbol"].presence || "No symbol extracted" %></span>
+                  <% observed_at = alert["observed_at"].present? ? Time.zone.parse(alert["observed_at"].to_s) : nil %>
+                  <span><%= observed_at ? "#{time_ago_in_words(observed_at)} ago" : "Unknown time" %></span>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="px-5 py-8 text-sm text-gray-500 text-center">No deterministic buy/sell alerts yet.</div>
+        <% end %>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-800 flex items-center justify-between">
+          <h2 class="text-white font-semibold">Inference Queue</h2>
+          <span class="text-xs uppercase tracking-[0.18em] text-amber-300"><%= pluralize(inference_signal_alerts.size, "post") %></span>
+        </div>
+        <% if inference_signal_alerts.present? %>
+          <div class="divide-y divide-gray-800">
+            <% inference_signal_alerts.each do |alert| %>
+              <div class="px-5 py-4 space-y-2">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <p class="text-sm font-semibold text-white"><%= alert["title"] %></p>
+                    <p class="mt-0.5 text-xs text-gray-400"><%= alert["source_label"] || alert["account"] %></p>
+                  </div>
+                  <span class="shrink-0 rounded-full border border-amber-500/30 bg-amber-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200">
+                    Needs inference
+                  </span>
+                </div>
+                <p class="text-sm text-gray-200"><%= truncate(alert["text"].to_s, length: 180) %></p>
+                <div class="flex items-center justify-between gap-4 text-xs text-gray-500">
+                  <span><%= alert["symbol"].presence || "No symbol extracted" %></span>
+                  <% observed_at = alert["observed_at"].present? ? Time.zone.parse(alert["observed_at"].to_s) : nil %>
+                  <span><%= observed_at ? "#{time_ago_in_words(observed_at)} ago" : "Unknown time" %></span>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="px-5 py-8 text-sm text-gray-500 text-center">No ambiguous posts are queued right now.</div>
+        <% end %>
+      </div>
+    </div>
+
+    <% if @signal_sources.present? %>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-800 flex items-center justify-between">
+          <h2 class="text-white font-semibold">Source Health</h2>
+          <span class="text-xs uppercase tracking-[0.18em] text-gray-400"><%= pluralize(@signal_sources.size, "source") %></span>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+            <tr>
+              <th class="px-4 py-3 text-left font-medium">Source</th>
+              <th class="px-4 py-3 text-left font-medium">Rules</th>
+              <th class="px-4 py-3 text-left font-medium">Last Success</th>
+              <th class="px-4 py-3 text-left font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800">
+            <% @signal_sources.each do |source| %>
+              <% last_success = source["last_success_at"].present? ? Time.zone.parse(source["last_success_at"].to_s) : nil %>
+              <tr class="hover:bg-gray-800/40">
+                <td class="px-4 py-3">
+                  <p class="font-semibold text-white"><%= source["label"] || source["account"] %></p>
+                  <p class="text-xs text-gray-500"><%= source["provider"] %> · <%= source["account"] %></p>
+                </td>
+                <td class="px-4 py-3 text-gray-300"><%= source["rule_count"] %></td>
+                <td class="px-4 py-3 text-gray-300"><%= last_success ? "#{time_ago_in_words(last_success)} ago" : "Never" %></td>
+                <td class="px-4 py-3">
+                  <% if source["last_error"].present? %>
+                    <span class="rounded-full border border-rose-500/30 bg-rose-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-rose-200">Error</span>
+                    <p class="mt-1 text-xs text-rose-300"><%= source["last_error"] %></p>
+                  <% else %>
+                    <span class="rounded-full border border-emerald-500/30 bg-emerald-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200">Healthy</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
       </div>
     <% end %>
 

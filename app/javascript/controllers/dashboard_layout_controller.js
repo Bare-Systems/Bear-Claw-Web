@@ -6,6 +6,9 @@ class DashboardLayoutController extends Controller {
     this.onPointerMove = this.onPointerMove.bind(this)
     this.onPointerUp = this.onPointerUp.bind(this)
     this.activeInteraction = null
+    // The square-grid controller owns `grid-auto-rows` (it keeps row height equal
+    // to column width), and camera tile heights are kept feed-shaped server-side,
+    // so this controller only handles drag-to-move and drag-to-resize.
   }
 
   disconnect() {
@@ -29,10 +32,8 @@ class DashboardLayoutController extends Controller {
 
     event.preventDefault()
 
-    const firstTile = this.itemTargets[0]
-    const firstHeight = firstTile ? firstTile.getBoundingClientRect().height : 256
-    const rowSpan = Number((firstTile && firstTile.dataset.height) || 1)
-    const rowHeight = firstHeight / Math.max(rowSpan, 1)
+    const tileRect = tile.getBoundingClientRect()
+    const rowHeight = tileRect.height / Math.max(Number(tile.dataset.height) || 1, 1)
     const rect = this.element.getBoundingClientRect()
     const cellWidth = rect.width / this.columnsValue
 
@@ -49,6 +50,9 @@ class DashboardLayoutController extends Controller {
       committedLayouts: this.captureLayouts(),
       rowHeight,
       cellWidth,
+      axis: null,
+      isCamera: tile.dataset.tileKind === "camera",
+      feedAspect: Number(tile.dataset.feedAspect) || (16 / 9),
       moved: false,
     }
 
@@ -62,17 +66,41 @@ class DashboardLayoutController extends Controller {
   onPointerMove(event) {
     if (!this.activeInteraction) return
 
-    const deltaColumns = Math.round((event.clientX - this.activeInteraction.startX) / this.activeInteraction.cellWidth)
-    const deltaRows = Math.round((event.clientY - this.activeInteraction.startY) / this.activeInteraction.rowHeight)
+    const rawDeltaColumns = (event.clientX - this.activeInteraction.startX) / this.activeInteraction.cellWidth
+    const rawDeltaRows = (event.clientY - this.activeInteraction.startY) / this.activeInteraction.rowHeight
+    const deltaColumns = Math.round(rawDeltaColumns)
+    const deltaRows = Math.round(rawDeltaRows)
     let preview
 
     if (this.activeInteraction.mode === "move") {
       const nextColumn = this.clampColumn(this.activeInteraction.startColumn + deltaColumns, this.activeInteraction.startWidth)
       const nextRow = Math.max(this.activeInteraction.startRow + deltaRows, 1)
       preview = { row: nextRow, column: nextColumn, width: this.activeInteraction.startWidth, height: this.activeInteraction.startHeight }
+    } else if (this.activeInteraction.isCamera) {
+      // Aspect-locked resize. Grid cells are square (the square-grid controller
+      // keeps row height == column width), so the tile's pixel aspect equals its
+      // width:height in grid units. The drag's dominant axis drives the size and
+      // the other dimension is derived from the feed aspect, so the camera tile
+      // box always hugs the feed instead of letterboxing.
+      const { startWidth, startHeight, startColumn, startRow, feedAspect } = this.activeInteraction
+      let nextWidth
+      let nextHeight
+
+      if (Math.abs(rawDeltaColumns) >= Math.abs(rawDeltaRows)) {
+        nextWidth = this.clampWidth(startWidth + deltaColumns, startColumn)
+        nextHeight = this.clampHeight(Math.max(Math.round(nextWidth / feedAspect), 1))
+      } else {
+        nextHeight = this.clampHeight(startHeight + deltaRows)
+        nextWidth = this.clampWidth(Math.max(Math.round(nextHeight * feedAspect), 1), startColumn)
+      }
+
+      preview = { row: startRow, column: startColumn, width: nextWidth, height: nextHeight }
     } else {
-      const nextWidth = this.clampWidth(this.activeInteraction.startWidth + deltaColumns, this.activeInteraction.startColumn)
-      const nextHeight = this.clampHeight(this.activeInteraction.startHeight + deltaRows)
+      const axis = this.resolveResizeAxis(rawDeltaColumns, rawDeltaRows)
+      const widthDelta = axis === "height" ? 0 : deltaColumns
+      const heightDelta = axis === "width" ? 0 : deltaRows
+      const nextWidth = this.clampWidth(this.activeInteraction.startWidth + widthDelta, this.activeInteraction.startColumn)
+      const nextHeight = this.clampHeight(this.activeInteraction.startHeight + heightDelta)
       preview = { row: this.activeInteraction.startRow, column: this.activeInteraction.startColumn, width: nextWidth, height: nextHeight }
     }
 
@@ -296,6 +324,27 @@ class DashboardLayoutController extends Controller {
 
   clampHeight(height) {
     return Math.min(Math.max(height, 1), this.maxHeightValue)
+  }
+
+  resolveResizeAxis(rawDeltaColumns, rawDeltaRows) {
+    if (this.activeInteraction.axis) return this.activeInteraction.axis
+
+    const absColumns = Math.abs(rawDeltaColumns)
+    const absRows = Math.abs(rawDeltaRows)
+
+    if (Math.max(absColumns, absRows) < 0.35) {
+      return "both"
+    }
+
+    if (absColumns > absRows * 1.35) {
+      this.activeInteraction.axis = "width"
+    } else if (absRows > absColumns * 1.35) {
+      this.activeInteraction.axis = "height"
+    } else {
+      this.activeInteraction.axis = "both"
+    }
+
+    return this.activeInteraction.axis
   }
 }
 

@@ -35,9 +35,19 @@ module Home
         @dashboard.dashboard_tiles.to_a
       end
       @dashboard_alerts = helpers.dashboard_alerts_for_tiles(@visible_tiles)
+      @camera_alerts = fetch_koala_alerts
     end
 
     private
+
+    def fetch_koala_alerts
+      return [] if ENV["KOALA_URL"].blank?
+
+      payload = koala_client.recent_alerts(limit: 8)
+      Array(payload.dig("data", "alerts"))
+    rescue KoalaClient::Error
+      []
+    end
 
     def sync_koala_inventory
       return if ENV["KOALA_URL"].blank?
@@ -117,7 +127,8 @@ module Home
     end
 
     def upgrade_dashboard_density!(dashboard)
-      Home::DashboardDensityUpgrader.new(dashboard: dashboard).upgrade!
+      dashboard = Home::DashboardDensityUpgrader.new(dashboard: dashboard).upgrade!
+      Home::CameraAspectBackfill.new(dashboard: dashboard).run!
     end
   end
 end

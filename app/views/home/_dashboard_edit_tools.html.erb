@@ -1,0 +1,87 @@
+<section class="rounded-2xl border border-gray-800 bg-gray-950/92 p-4">
+  <div class="flex items-start justify-between gap-3">
+    <div>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-300/80">Edit Tools</p>
+      <h2 class="mt-1 text-sm font-semibold text-white">Add a widget</h2>
+      <p class="mt-1 text-xs text-gray-500">Search a capability, click `Add`, then adjust the tile with drag or the edit icon.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <%= button_to "Undo",
+        undo_home_dashboard_layout_history_path,
+        method: :post,
+        params: { dashboard_id: dashboard.id },
+        class: "rounded-lg border border-gray-700 px-2.5 py-1.5 text-[11px] font-medium text-gray-200 transition hover:bg-gray-800" %>
+      <%= button_to "Reset",
+        reset_home_dashboard_layout_history_path,
+        method: :post,
+        params: { dashboard_id: dashboard.id },
+        class: "rounded-lg border border-red-800/70 px-2.5 py-1.5 text-[11px] font-medium text-red-200 transition hover:bg-red-950/60",
+        data: { turbo_confirm: "Restore the default dashboard layout? This keeps your presets, and you can undo the reset." } %>
+    </div>
+  </div>
+
+  <%= form_with url: quick_add_home_dashboard_tiles_path, method: :post, class: "mt-4 space-y-3", data: { controller: "dashboard-quick-add" } do |form| %>
+    <div class="grid gap-3">
+      <div>
+        <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" for="dashboard-quick-add-search">Search</label>
+        <input
+          id="dashboard-quick-add-search"
+          type="search"
+          placeholder="Camera, humidity, radon..."
+          class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white"
+          data-dashboard-quick-add-target="search"
+          data-action="input->dashboard-quick-add#filter change->dashboard-quick-add#filter"
+        >
+      </div>
+
+      <div>
+        <%= form.label :section, "Section", class: "mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500" %>
+        <%= form.select :section,
+          options_for_select(dashboard_section_options(dashboard), selected_section.presence || "General"),
+          {},
+          name: "dashboard_quick_add[section]",
+          class: "w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white" %>
+      </div>
+    </div>
+
+    <div class="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-gray-800 bg-gray-950/60 p-2">
+      <% available_capabilities.each do |capability| %>
+        <% picker = dashboard_capability_picker_data(capability) %>
+        <% radio_id = "dashboard-quick-add-capability-#{capability.id}" %>
+        <label
+          for="<%= radio_id %>"
+          class="block cursor-pointer rounded-lg border border-gray-800 bg-gray-900/70 p-3 transition hover:border-sky-700/60 hover:bg-gray-900"
+          data-dashboard-quick-add-target="option"
+          data-search-text="<%= picker[:search_text] %>"
+        >
+          <div class="flex items-start gap-3">
+            <%= radio_button_tag "dashboard_quick_add[device_capability_id]",
+              capability.id,
+              false,
+              id: radio_id,
+              class: "mt-1 h-4 w-4 border-gray-600 bg-gray-950 text-sky-500 focus:ring-sky-500",
+              data: { action: "change->dashboard-quick-add#selectionChanged" } %>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-medium text-white"><%= picker[:capability_name] %></p>
+                  <p class="mt-1 truncate text-xs text-gray-400"><%= picker[:device_name] %> · <%= picker[:provider_name] %></p>
+                </div>
+                <span class="rounded-full border border-gray-700 px-2 py-1 text-[11px] uppercase tracking-wide text-gray-300"><%= picker[:default_widget_label] %></span>
+              </div>
+            </div>
+          </div>
+        </label>
+      <% end %>
+
+      <div
+        class="hidden rounded-lg border border-amber-800/60 bg-amber-950/30 px-3 py-2 text-sm text-amber-200"
+        data-dashboard-quick-add-target="emptyState"
+      >
+        No capabilities match that search.
+      </div>
+    </div>
+
+    <%= form.submit "Add", class: "w-full rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-40", data: { dashboard_quick_add_target: "submit" }, disabled: true %>
+  <% end %>
+</section>

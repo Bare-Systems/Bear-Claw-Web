@@ -51,6 +51,42 @@ class KodiakClient
     request_json("/api/v1/portfolio/movers?market_type=#{market_type}&limit=#{limit}")
   end
 
+  # ── Signal Monitoring ────────────────────────────────────────────────────────
+
+  def market_signal_overview
+    request_json("/api/v1/signals/overview")
+  end
+
+  def market_signal_alerts(limit: 12, bucket: nil)
+    path = "/api/v1/signals/alerts?limit=#{limit}"
+    path = "#{path}&bucket=#{bucket}" if bucket.present?
+    request_json(path)
+  end
+
+  def market_signal_sources
+    request_json("/api/v1/signals/sources")
+  end
+
+  def x_oauth_status
+    request_json("/api/v1/signals/x/oauth/status")
+  end
+
+  def connect_x_oauth(x_user_id:, username:, access_token:, refresh_token:, token_type:, scope:, expires_in:)
+    request_json_post("/api/v1/signals/x/oauth/connect", {
+      x_user_id: x_user_id,
+      username: username,
+      access_token: access_token,
+      refresh_token: refresh_token,
+      token_type: token_type,
+      scope: scope,
+      expires_in: expires_in
+    })
+  end
+
+  def disconnect_x_oauth
+    request_delete("/api/v1/signals/x/oauth")
+  end
+
   # ── Strategies ────────────────────────────────────────────────────────────────
 
   # Returns the array of strategy hashes (unwraps the StrategyListResponse envelope).

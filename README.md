@@ -24,6 +24,16 @@ That page reads Tardigrade's redacted `/bearclaw/transcripts` APIs through the
 Rails backend so operator sessions can inspect edge request/response captures
 without giving the browser direct access to transcript storage.
 
+The Finances dashboard is also read-only from the browser's perspective. It
+pulls account state, orders, strategy state, and now Kodiak's deterministic
+source-driven market alerts through `KodiakClient`, so the browser never needs
+direct access to Kodiak auth or source-monitoring credentials.
+
+The Settings module now also owns the X OAuth handshake for Kodiak. Operators
+connect X from BearClawWeb, BearClawWeb exchanges the OAuth code for user-context
+tokens, then hands those tokens to Kodiak so Kodiak can read the authenticated
+X home timeline and turn followed-account posts into deterministic alerts.
+
 ## Homelab Network Contract
 
 The working `blink` topology is:
@@ -53,10 +63,28 @@ Do not change those boundaries casually:
   datastore. It serves both REST and MCP on the same published port.
 - `Koala` is the Home-camera API and snapshot service.
 - `Polar` is the Home climate and environmental telemetry API.
+- `Kodiak` is the Finances API and source-monitoring backend. BearClawWeb reads
+  portfolio state plus source-driven `buy` / `sell` alerts from Kodiak over its
+  authenticated REST API; alert decisions remain owned by Kodiak.
 
 BearClawWeb does not talk directly to the Ursa C2 listener for Security pages.
 It depends on the bearer-authenticated control-plane API exposed by `major.web`
 under `/api/v1/*`. Agent clients can use the same service under `/mcp`.
+
+The browser never receives the Koala bearer token. All image/binary fetches are
+proxied server-side through `KoalaClient` so the `KOALA_TOKEN` stays on the
+Rails host:
+
+- Live camera frames: `Home::CamerasController#snapshot` → `KoalaClient#snapshot`
+  → Koala `GET /admin/cameras/{id}/snapshot` (polled by the `camera-feed`
+  Stimulus controller).
+- Detection-alert snapshots: `Home::AlertsController#snapshot` →
+  `KoalaClient#alert_snapshot` → Koala `GET /admin/alerts/{id}/snapshot` (the
+  bbox-annotated frame captured when an alert fired; rendered as a thumbnail on
+  each "Recent Alerts" card, hidden by the `alert-snapshot` controller on
+  `404`). This view is storage-agnostic — if Koala later serves video clips
+  instead of JPEGs, only the `<img>` → `<video>` element changes. See Koala's
+  README "Detection snapshots" for the producing side.
 
 ## Configuration
 
@@ -87,6 +115,30 @@ POLAR_URL=http://192.168.86.53:6703
 POLAR_TOKEN=<polar service token>
 ```
 
+BearClaw auth supports two modes:
+
+- Google OAuth remains the primary production login path.
+- An optional support OIDC login can be enabled for a dedicated test account
+  when browser automation or operator testing cannot use a personal Google SSO
+  session.
+
+Support OIDC is disabled unless these env vars are configured:
+
+```env
+OIDC_SUPPORT_ENABLED=true
+OIDC_ISSUER_URL=http://192.168.86.53:8180/realms/ekho
+OIDC_CLIENT_ID=bearclaw-web
+OIDC_CLIENT_SECRET=<keycloak client secret>
+OIDC_REDIRECT_URI=https://bearclaw.baresystems.com/auth/oidc/callback
+OIDC_LOGOUT_URL=http://192.168.86.53:8180/realms/ekho/protocol/openid-connect/logout
+# Optional comma-separated allowlist for support-login emails.
+OIDC_ALLOWED_EMAILS=support-test@bearclaw.local
+```
+
+When enabled, the login page shows a separate `Support Login` button. Keep this
+path scoped to a dedicated non-user account instead of replacing Google for
+real operators.
+
 BearClaw agent requests also need the shared Tardigrade JWT settings:
 
 ```env
@@ -94,6 +146,20 @@ TARDIGRADE_JWT_SECRET=<shared hs256 secret>
 TARDIGRADE_JWT_ISSUER=bearclaw-web
 TARDIGRADE_JWT_AUDIENCE=bearclaw-api
 ```
+
+X integration requires these env vars on BearClawWeb:
+
+```env
+X_CLIENT_ID=<x oauth client id>
+X_CLIENT_SECRET=<x oauth client secret for confidential clients>
+X_REDIRECT_URI=https://bearclaw.baresystems.com/settings/integrations/x/callback
+```
+
+`X_REDIRECT_URI` should exactly match the callback configured for the X app in
+the X Developer Console. BearClawWeb uses that callback to connect the operator's
+X account, then forwards the resulting tokens to Kodiak. Kodiak also needs the
+same `X_CLIENT_ID` and `X_CLIENT_SECRET`, plus its own
+`KODIAK_SIGNAL_ENCRYPTION_SECRET`, so it can refresh and store the tokens safely.
 
 ## Failure Behavior
 

@@ -1,5 +1,6 @@
 class SessionsController < ApplicationController
   skip_before_action :require_login, only: [ :new, :create, :failure, :dev_login, :accept_invite ]
+  helper_method :google_login_enabled?, :support_oidc_enabled?, :primary_auth_provider
 
   def new
     redirect_to root_path if current_user
@@ -14,7 +15,7 @@ class SessionsController < ApplicationController
     end
 
     invite = token.present? ? Invite.find_by(token: token) : nil
-    user   = User.from_google(auth, invite: invite)
+    user   = User.from_omniauth(auth, invite: invite)
 
     establish_session!(user)
     redirect_to root_path, notice: "Signed in as #{user.name}."
@@ -23,8 +24,10 @@ class SessionsController < ApplicationController
     redirect_to login_path, alert: "Access to BearClaw is by invitation only."
   rescue User::InviteEmailMismatchError
     redirect_to login_path, alert: "This invite is not valid for your Google account."
+  rescue User::SupportAccessDeniedError
+    redirect_to login_path, alert: "This support login is not enabled for your account."
   rescue => e
-    Rails.logger.error("Google OAuth error: #{e.class}: #{e.message}")
+    Rails.logger.error("OmniAuth error (#{params[:provider]}): #{e.class}: #{e.message}")
     redirect_to login_path, alert: "Authentication failed. Please try again."
   end
 
@@ -36,7 +39,7 @@ class SessionsController < ApplicationController
     end
 
     session[:invite_token] = invite.token
-    redirect_to "/auth/google_oauth2"
+    redirect_to "/auth/#{primary_auth_provider}"
   end
 
   def failure
@@ -67,6 +70,22 @@ class SessionsController < ApplicationController
   end
 
   private
+
+  def google_login_enabled?
+    ENV["GOOGLE_CLIENT_ID"].present? && ENV["GOOGLE_CLIENT_SECRET"].present?
+  end
+
+  def support_oidc_enabled?
+    ActiveModel::Type::Boolean.new.cast(ENV["OIDC_SUPPORT_ENABLED"]) &&
+      ENV["OIDC_ISSUER_URL"].present? &&
+      ENV["OIDC_CLIENT_ID"].present? &&
+      ENV["OIDC_CLIENT_SECRET"].present? &&
+      ENV["OIDC_REDIRECT_URI"].present?
+  end
+
+  def primary_auth_provider
+    google_login_enabled? ? "google_oauth2" : "oidc"
+  end
 
   def establish_session!(user)
     session[:user_id] = user.id

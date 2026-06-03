@@ -185,17 +185,11 @@ OVERVIEW = {
   "recent_events"      => EVENTS.first(5)
 }
 
-# Minimal 1x1 gray JPEG placeholder for camera snapshots (verified valid).
-PLACEHOLDER_JPEG = Base64.decode64(
-  "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDB" \
-  "kSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAAL" \
-  "CAABAAEBAREA/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAA" \
-  "AgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0f" \
-  "AkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZn" \
-  "aGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5us" \
-  "LDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9oACAEBAAA/" \
-  "APsooor/2Q=="
-).freeze
+# Dev placeholder for camera snapshots: 640x360 (16:9) PNG with a centered
+# circle, so any aspect-ratio distortion is visually obvious (circle -> ellipse).
+# Loaded from disk so the bytes are always valid. Served as image/jpeg, but
+# browsers sniff the real bytes for <img>.
+PLACEHOLDER_JPEG = File.binread(File.join(__dir__, "camera_placeholder.png")).freeze
 
 # ── Koala mock (port 8082) ───────────────────────────────────────────────────
 

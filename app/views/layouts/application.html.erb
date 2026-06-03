@@ -8,6 +8,7 @@
     <meta name="turbo-prefetch" content="false">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <%= action_cable_meta_tag %>
     <%= yield :head %>
     <link rel="icon" href="/icon.png" type="image/png">
     <%= tag.link rel: "stylesheet", href: "#{asset_path('tailwind.css')}?v=20260320a", "data-turbo-track": "reload" %>

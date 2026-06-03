@@ -51,8 +51,11 @@ module Settings
 
     def destroy
       name = @integration.display_name
+      kodiak_client.disconnect_x_oauth if @integration.provider_key == "x"
       @integration.destroy!
       redirect_to settings_integrations_path, notice: "#{name} disconnected."
+    rescue KodiakClient::Error => e
+      redirect_to settings_integrations_path, alert: "Failed to disconnect #{name}: #{e.message}"
     end
 
     private
@@ -72,6 +75,15 @@ module Settings
 
     def enqueue_sync(provider_key)
       SyncIntegrationJob.perform_later(provider_key: provider_key)
+    end
+
+    def kodiak_client
+      @kodiak_client ||= KodiakClient.new(
+        base_url: ENV.fetch("KODIAK_URL", "http://192.168.86.53:6702"),
+        token: ENV.fetch("KODIAK_TOKEN", ""),
+        actor: current_user&.email,
+        role: current_user&.role&.to_s
+      )
     end
   end
 end

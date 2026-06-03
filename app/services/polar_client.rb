@@ -34,6 +34,21 @@ class PolarClient
     request_json("/v1/station/health")
   end
 
+  # Returns the current outdoor weather observation (NOAA).
+  # Shape: { target_id:, source:, recorded_at:, condition:, temperature_c:,
+  #          humidity_pct:, wind_speed_ms:, wind_direction_deg:, pressure_hpa:,
+  #          visibility_km:, source_station:, quality:, stale: }
+  def weather_current
+    request_json("/v1/weather/current")
+  end
+
+  # Returns the current outdoor air quality observation (AirNow).
+  # Shape: { target_id:, source:, overall_aqi:, category:, pollutants:,
+  #          stale:, stale_reason: }
+  def air_quality_current
+    request_json("/v1/air-quality/current")
+  end
+
   private
 
   def request_json(path)

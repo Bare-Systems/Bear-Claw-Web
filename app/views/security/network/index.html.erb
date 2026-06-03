@@ -1,0 +1,131 @@
+<% content_for :title, "Network — Security — BearClaw" %>
+
+<div class="max-w-6xl mx-auto space-y-6">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white mb-1">Network Devices</h1>
+      <p class="text-gray-500 text-sm">Home-network inventory from Ursa. Unknown (unbaselined) devices are highlighted.</p>
+    </div>
+    <%= button_to "Set Baseline", security_network_baseline_path, method: :post,
+          class: "px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm cursor-pointer whitespace-nowrap",
+          form: { data: { turbo_confirm: "Mark every currently-seen device as trusted? This becomes the new baseline." } } %>
+  </div>
+
+  <div class="grid grid-cols-3 gap-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div class="text-3xl font-semibold text-sky-300"><%= @counts["total"].to_i %></div>
+      <p class="text-gray-500 text-sm mt-2">Total devices</p>
+    </div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div class="text-3xl font-semibold text-emerald-300"><%= @counts["trusted"].to_i %></div>
+      <p class="text-gray-500 text-sm mt-2">Trusted</p>
+    </div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div class="text-3xl font-semibold <%= @counts["untrusted"].to_i.positive? ? "text-amber-300" : "text-gray-400" %>"><%= @counts["untrusted"].to_i %></div>
+      <p class="text-gray-500 text-sm mt-2">Unknown</p>
+    </div>
+  </div>
+
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium">IP</th>
+          <th class="px-4 py-3 text-left font-medium">MAC</th>
+          <th class="px-4 py-3 text-left font-medium">Vendor</th>
+          <th class="px-4 py-3 text-left font-medium">Label</th>
+          <th class="px-4 py-3 text-left font-medium">Trust</th>
+          <th class="px-4 py-3 text-left font-medium">Last Seen</th>
+          <th class="px-4 py-3 text-right font-medium">Seen</th>
+          <th class="px-4 py-3 text-right font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800">
+        <% if @devices.empty? %>
+          <tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">No devices recorded yet. Run a network scan to populate the inventory.</td></tr>
+        <% end %>
+        <% @devices.each do |device| %>
+          <% trusted = ActiveModel::Type::Boolean.new.cast(device["trusted"]) %>
+          <tr class="hover:bg-gray-800/40 <%= "bg-amber-950/20" unless trusted %>">
+            <td class="px-4 py-3 text-white font-mono"><%= device["ip"].presence || "-" %></td>
+            <td class="px-4 py-3 text-gray-300 font-mono text-xs"><%= device["mac"] %></td>
+            <td class="px-4 py-3 text-gray-400"><%= device["vendor"].presence || "-" %></td>
+            <td class="px-4 py-3">
+              <%= form_with url: security_network_device_path, method: :patch, class: "flex gap-1 items-center" do %>
+                <%= hidden_field_tag :mac, device["mac"] %>
+                <%= hidden_field_tag :trusted, trusted %>
+                <%= text_field_tag :label, device["label"], placeholder: "name…",
+                      class: "bg-gray-950 border border-gray-800 rounded px-2 py-1 text-xs text-white w-28" %>
+                <%= submit_tag "Save", class: "px-2 py-1 rounded border border-gray-700 text-gray-300 text-xs cursor-pointer" %>
+              <% end %>
+            </td>
+            <td class="px-4 py-3">
+              <span class="text-xs px-2 py-1 rounded-full <%= trusted ? ursa_status_classes("active") : ursa_status_classes("warning") %>">
+                <%= trusted ? "trusted" : "unknown" %>
+              </span>
+            </td>
+            <td class="px-4 py-3 text-gray-400"><%= ursa_time_ago(device["last_seen"]) %></td>
+            <td class="px-4 py-3 text-gray-400 text-right"><%= device["times_seen"] || 1 %></td>
+            <td class="px-4 py-3 text-right">
+              <%= form_with url: security_network_device_path, method: :patch, class: "inline" do %>
+                <%= hidden_field_tag :mac, device["mac"] %>
+                <%= hidden_field_tag :trusted, !trusted %>
+                <%= submit_tag trusted ? "Untrust" : "Trust",
+                      class: "px-3 py-1 rounded-lg text-xs cursor-pointer #{trusted ? "border border-gray-700 text-gray-300" : "bg-emerald-700 hover:bg-emerald-600 text-white"}" %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-800 flex items-center justify-between gap-3">
+      <div>
+        <h2 class="text-lg font-semibold text-white">DNS Talkers</h2>
+        <p class="text-gray-500 text-xs mt-0.5">Which devices are making the most DNS queries (Pi-hole, last 24h).</p>
+      </div>
+      <% if @dns["available"] %>
+        <span class="text-xs text-gray-400">
+          <%= @dns["total"].to_i %> queries · <%= @dns["blocked"].to_i %> blocked
+          (<%= (@dns["block_ratio"].to_f * 100).round(1) %>%)
+        </span>
+      <% end %>
+    </div>
+
+    <% if !@dns["available"] %>
+      <div class="px-5 py-8 text-center text-gray-500 text-sm">
+        DNS insight unavailable — Pi-hole's query database could not be read.
+      </div>
+    <% elsif @dns_talkers.empty? %>
+      <div class="px-5 py-8 text-center text-gray-500 text-sm">No DNS queries in the last 24 hours.</div>
+    <% else %>
+      <table class="w-full text-sm">
+        <thead class="bg-gray-950/60 border-b border-gray-800 text-gray-500">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium">Client</th>
+            <th class="px-4 py-3 text-right font-medium">Queries</th>
+            <th class="px-4 py-3 text-right font-medium">Blocked</th>
+            <th class="px-4 py-3 text-right font-medium">Block %</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          <% @dns_talkers.each do |talker| %>
+            <tr class="hover:bg-gray-800/40">
+              <td class="px-4 py-3 text-white font-mono"><%= talker["client"] %></td>
+              <td class="px-4 py-3 text-gray-300 text-right"><%= talker["total"].to_i %></td>
+              <td class="px-4 py-3 text-gray-400 text-right"><%= talker["blocked"].to_i %></td>
+              <td class="px-4 py-3 text-right">
+                <% ratio = (talker["block_ratio"].to_f * 100).round(1) %>
+                <span class="text-xs px-2 py-1 rounded-full <%= ratio >= 25 ? ursa_status_classes("warning") : ursa_status_classes("active") %>">
+                  <%= ratio %>%
+                </span>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </div>
+</div>

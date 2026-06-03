@@ -46,9 +46,13 @@ module Home
 
     # ── Home Dashboard: cameras + Polar air quality ─────────────────────────
 
+    # Outdoor metrics surfaced as their own widgets, in display order.
+    OUTDOOR_WIDGET_METRICS = %w[temperature condition wind_speed aqi].freeze
+
     def seed_home_dashboard!(dashboard)
       seed_camera_tiles!(dashboard)
       seed_polar_tiles!(dashboard)
+      ensure_polar_outdoor_tiles!(dashboard)
     end
 
     def seed_camera_tiles!(dashboard)
@@ -105,6 +109,56 @@ module Home
           position:          1
         )
       end
+    end
+
+    # Idempotently appends the outdoor weather + air-quality widgets (NOAA +
+    # AirNow via Polar). Unlike seed_polar_tiles!, this runs on every render so
+    # it back-fills dashboards that were already seeded with indoor sensors
+    # before the outdoor feeds existed. Only adds widgets that aren't present.
+    def ensure_polar_outdoor_tiles!(dashboard)
+      capabilities = outdoor_polar_capabilities
+      return if capabilities.empty?
+
+      existing_ids = dashboard.dashboard_widgets.pluck(:device_capability_id).compact.to_set
+      to_add = capabilities.reject { |cap| existing_ids.include?(cap.id) }
+      return if to_add.empty?
+
+      base_position = dashboard.dashboard_tiles.maximum(:position).to_i
+      base_row      = dashboard.dashboard_tiles.maximum(:row).to_i + 1
+
+      to_add.each_with_index do |capability, index|
+        tile = dashboard.dashboard_tiles.create!(
+          title:    capability.name,
+          row:      base_row + (index / 4),
+          column:   (index % 4) + 1,
+          width:    1,
+          height:   1,
+          position: base_position + index + 1
+        )
+        tile.dashboard_widgets.create!(
+          device_capability: capability,
+          widget_type:       "air_quality_stat",
+          title:             capability.name,
+          position:          1
+        )
+      end
+    end
+
+    # One outdoor-scope Polar capability per desired metric, in display order.
+    def outdoor_polar_capabilities
+      capabilities = DeviceCapability
+        .joins(device: { service_connection: :service_provider })
+        .includes(:device)
+        .where(capability_type: "sensor", service_providers: { key: "polar" }, devices: { user_id: @user.id })
+        .select { |cap| cap.configuration_hash["scope"].to_s == "outdoor" }
+
+      by_metric = {}
+      capabilities.each do |cap|
+        metric = cap.configuration_hash["metric"].to_s
+        by_metric[metric] ||= cap
+      end
+
+      OUTDOOR_WIDGET_METRICS.filter_map { |metric| by_metric[metric] }
     end
 
     def polar_provider_widgets_exist?(dashboard)

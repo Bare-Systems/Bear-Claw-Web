@@ -37,8 +37,9 @@ class DashboardSyncController extends Controller {
   // ── Private ──────────────────────────────────────────────────────────────
 
   onConnected() {
-    // Start the 30 s heartbeat; first tick fires after one interval so
-    // the page-load sync isn't immediately duplicated.
+    // Refresh immediately so non-owner viewers do not wait a full interval
+    // before the shared household dashboard catches up.
+    this.requestSync()
     this.timer = setInterval(() => this.requestSync(), this.intervalValue)
     this.setStatus("Connected")
   }

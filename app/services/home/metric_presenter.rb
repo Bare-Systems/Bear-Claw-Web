@@ -17,7 +17,10 @@ module Home
       "co2"         => "💨",
       "voc"         => "🫧",
       "radon"       => "☢",
-      "pm2.5"       => "🔬"
+      "pm2.5"       => "🔬",
+      "aqi"         => "🌫",
+      "wind_speed"  => "🌬",
+      "pressure"    => "📈"
     }.freeze
 
     # ── Threshold bands per metric ───────────────────────────────────────────
@@ -78,6 +81,35 @@ module Home
           { max: 35.0,          label: "Moderate",   color: :amber   },
           { max: 55.0,          label: "Sensitive",  color: :orange  },
           { max: Float::INFINITY, label: "Unhealthy", color: :red    }
+        ]
+      },
+      # US EPA AQI category breakpoints.
+      "aqi" => {
+        gauge: { min: 0.0, max: 300.0 },
+        bands: [
+          { max: 50.0,          label: "Good",       color: :emerald },
+          { max: 100.0,         label: "Moderate",   color: :amber   },
+          { max: 150.0,         label: "Sensitive",  color: :orange  },
+          { max: Float::INFINITY, label: "Unhealthy", color: :red    }
+        ]
+      },
+      # Wind speed in m/s (as reported by NOAA via Polar).
+      "wind_speed" => {
+        gauge: { min: 0.0, max: 20.0 },
+        bands: [
+          { max: 5.0,           label: "Calm",       color: :emerald },
+          { max: 10.0,          label: "Breezy",     color: :emerald },
+          { max: 15.0,          label: "Windy",      color: :amber   },
+          { max: Float::INFINITY, label: "Gale",     color: :orange  }
+        ]
+      },
+      # Sea-level pressure in hPa.
+      "pressure" => {
+        gauge: { min: 980.0, max: 1040.0 },
+        bands: [
+          { max: 1000.0,        label: "Low",        color: :amber   },
+          { max: 1025.0,        label: "Normal",     color: :emerald },
+          { max: Float::INFINITY, label: "High",     color: :amber   }
         ]
       }
     }.freeze
@@ -232,6 +264,9 @@ module Home
       when "co2"         then format("%.0f", numeric_value)
       when "voc"         then format("%.0f", numeric_value)
       when "radon"       then format("%.0f", numeric_value)
+      when "aqi"         then format("%.0f", numeric_value)
+      when "pressure"    then format("%.0f", numeric_value)
+      when "wind_speed"  then format("%.1f", numeric_value)
       else                    numeric_value.to_s
       end
     end

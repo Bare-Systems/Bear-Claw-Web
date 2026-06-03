@@ -52,6 +52,53 @@ class Home::UrsaDeviceSyncTest < ActiveSupport::TestCase
     assert_equal 2, cap.state_hash.dig("breakdown", "Total")
   end
 
+  test "syncs network device inventory into a capability" do
+    sync!(
+      sessions:  [],
+      campaigns: [],
+      network:   { "counts" => { "total" => 12, "trusted" => 10, "untrusted" => 2 } }
+    )
+
+    cap = DeviceCapability.find_by!(key: "ursa_network_devices")
+    assert_equal "status", cap.capability_type
+    assert_equal 12, cap.state_hash["value"]
+    assert_equal "devices", cap.state_hash["unit"]
+    assert_equal "warning", cap.state_hash["status"] # unknown devices present
+    assert_equal 12, cap.state_hash.dig("breakdown", "Total")
+    assert_equal 10, cap.state_hash.dig("breakdown", "Trusted")
+    assert_equal 2,  cap.state_hash.dig("breakdown", "Unknown")
+  end
+
+  test "network capability is active when no unknown devices" do
+    sync!(
+      sessions:  [],
+      campaigns: [],
+      network:   { "counts" => { "total" => 8, "trusted" => 8, "untrusted" => 0 } }
+    )
+
+    cap = DeviceCapability.find_by!(key: "ursa_network_devices")
+    assert_equal "active", cap.state_hash["status"]
+  end
+
+  # Graceful degradation: older Ursa without the network endpoint (404) must
+  # not break the sessions/campaigns capabilities that synced successfully.
+  test "missing network endpoint does not abort the sync" do
+    fake = Object.new
+    fake.define_singleton_method(:get_json) do |path, **|
+      raise UrsaClient::RequestError.new("Not Found", status: 404, body: "") if path.include?("network")
+      path.include?("campaigns") ? { "campaigns" => [] } : { "sessions" => [] }
+    end
+
+    assert_nothing_raised do
+      Home::UrsaDeviceSync.new(client: fake, base_url: "http://192.168.86.53:6707", user: @user).sync!
+    end
+
+    assert DeviceCapability.exists?(key: "ursa_sessions")
+    assert DeviceCapability.exists?(key: "ursa_campaigns")
+    assert_not DeviceCapability.exists?(key: "ursa_network_devices")
+    assert_equal "online", ServiceConnection.find_by!(key: "ursa").status
+  end
+
   test "sets connection status to error and re-raises on client failure" do
     fake = Object.new
     fake.define_singleton_method(:get_json) { |*| raise UrsaClient::RequestError.new("timeout", status: 504, body: "") }
@@ -75,10 +122,16 @@ class Home::UrsaDeviceSyncTest < ActiveSupport::TestCase
 
   private
 
-  def sync!(sessions:, campaigns:)
+  def sync!(sessions:, campaigns:, network: { "counts" => { "total" => 0, "trusted" => 0, "untrusted" => 0 } })
     fake = Object.new
     fake.define_singleton_method(:get_json) do |path, **|
-      path.include?("campaigns") ? { "campaigns" => campaigns } : { "sessions" => sessions }
+      if path.include?("network")
+        network
+      elsif path.include?("campaigns")
+        { "campaigns" => campaigns }
+      else
+        { "sessions" => sessions }
+      end
     end
 
     Home::UrsaDeviceSync.new(

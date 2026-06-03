@@ -1,6 +1,6 @@
 <% content_for :title, "Home — BearClaw" %>
 
-<div class="w-full" data-controller="dashboard-sync">
+<div class="w-full" data-controller="dashboard-sync dashboard-modal">
 
   <%# ── Top bar: label · sync status · actions ─────────────────────────────── %>
   <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -60,7 +60,7 @@
   <% end %>
 
   <% if @edit_mode %>
-    <p class="mb-3 text-xs uppercase tracking-[0.22em] text-sky-300">Drag a tile header to move · drag the corner handle to resize · dense grid packs tiles to avoid dead space</p>
+    <p class="mb-3 text-xs uppercase tracking-[0.22em] text-sky-300">Drag tiles to move · drag the lower-right corner to resize · dense grid packs tiles to avoid dead space</p>
   <% end %>
 
   <% if @dashboard_sections.any? %>
@@ -76,11 +76,7 @@
     </div>
   <% end %>
 
-  <% if @dashboard_alerts.any? %>
-    <%= render "home/dashboard_priority_watch", alerts: @dashboard_alerts %>
-  <% end %>
-
-  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(17rem,20vw)]">
     <section>
       <div class="pb-3">
         <% if @visible_tiles.empty? %>
@@ -89,7 +85,7 @@
               <p class="text-sm"><%= @selected_section.present? ? "No tiles in #{@selected_section} yet." : "No tiles yet." %></p>
               <p class="mt-1 text-xs">
                 <% if @edit_mode %>
-                  Use the editor on the right to add tiles.
+                  Use the edit tools on the right to add widgets.
                 <% else %>
                   <%= link_to "Enter edit mode", home_root_path(edit: 1, dashboard: params[:dashboard]), class: "text-sky-400 hover:underline" %> to add tiles.
                 <% end %>
@@ -98,10 +94,10 @@
           </div>
         <% else %>
           <div
-            class="dashboard-grid grid w-full auto-rows-[minmax(10rem,_1fr)] gap-3"
-            style="grid-template-columns: repeat(<%= @dashboard.columns %>, minmax(0, 1fr));"
+            class="dashboard-grid grid w-full gap-3"
+            style="grid-template-columns: repeat(<%= @dashboard.columns %>, minmax(0, 1fr)); grid-auto-rows: minmax(<%= dashboard_row_unit_rem(@dashboard) %>rem, 1fr);"
+            data-controller="square-grid<%= " dashboard-layout" if @edit_mode %>"
             <% if @edit_mode %>
-              data-controller="dashboard-layout"
               data-dashboard-layout-columns-value="<%= @dashboard.columns %>"
               data-dashboard-layout-max-height-value="<%= DashboardTile::MAX_HEIGHT %>"
               data-dashboard-layout-editing-class="ring-2 ring-sky-400/80"
@@ -116,17 +112,28 @@
       </div>
     </section>
 
-    <% if @edit_mode %>
-      <aside class="xl:sticky xl:top-4 xl:self-start">
-        <%= render "home/dashboard_editor",
+    <aside class="space-y-4 xl:sticky xl:top-4 xl:self-start">
+      <% if @edit_mode %>
+        <%= render "home/dashboard_edit_tools",
           dashboard: @dashboard,
           selected_section: @selected_section,
-          service_providers: @service_providers,
-          service_connections: @service_connections,
-          devices: @devices,
-          available_capabilities: @available_capabilities,
-          visible_tiles: @visible_tiles %>
-      </aside>
-    <% end %>
+          available_capabilities: @available_capabilities %>
+      <% end %>
+
+      <% if @camera_alerts.present? %>
+        <%= render "home/dashboard_camera_alerts", alerts: @camera_alerts %>
+      <% end %>
+
+      <% if @dashboard_alerts.any? %>
+        <%= render "home/dashboard_priority_watch", alerts: @dashboard_alerts %>
+      <% end %>
+
+    </aside>
   </div>
+
+  <% if @edit_mode %>
+    <% @visible_tiles.each do |tile| %>
+      <%= render "home/dashboard_tile_modal", tile: tile %>
+    <% end %>
+  <% end %>
 </div>

@@ -38,6 +38,10 @@ class Home::DashboardControllerTest < ActionController::TestCase
     assert_match "CAM 1", @response.body
     assert_match "CAM 8", @response.body
     assert_match snapshot_home_camera_path("cam_1"), @response.body
+    assert_match "object-contain", @response.body
+    assert_includes @response.body, "min-h-[8rem]"
+    assert_includes @response.body, "flex min-h-0 flex-1 flex-col"
+    assert_match "data-camera-feed-interval-value=\"2000\"", @response.body
   end
 
   test "home index seeds exactly one dashboard with 8 tiles on first visit" do
@@ -63,17 +67,17 @@ class Home::DashboardControllerTest < ActionController::TestCase
   test "edit mode renders dashboard editor" do
     get :index, params: { edit: 1 }
     assert_response :success
-    assert_match "Sections",                          @response.body
-    assert_match "Add Tile",                          @response.body
-    assert_match "Add Widget",                        @response.body
-    assert_match "Search Capabilities",               @response.body
-    assert_match "Capability Type",                   @response.body
-    assert_match "Selected Capability",               @response.body
-    assert_match "Service Providers",                 @response.body
-    assert_match "Devices and Capabilities",          @response.body
-    assert_match "data-controller=\"dashboard-layout\"", @response.body
-    assert_match "data-controller=\"widget-picker\"", @response.body
-    assert_match "Drag a tile header",                @response.body
+    assert_match "Edit Tools",                        @response.body
+    assert_match "Add a widget",                      @response.body
+    assert_match "dashboard-quick-add-search",        @response.body
+    assert_match "data-controller=\"dashboard-quick-add\"", @response.body
+    assert_match "Edit Tile",                         @response.body
+    assert_match "aria-label=\"Edit CAM 1\"",        @response.body
+    assert_match "data-controller=\"square-grid dashboard-layout\"", @response.body
+    assert_match "data-controller=\"dashboard-sync dashboard-modal\"", @response.body
+    assert_match "Drag tiles to move",                @response.body
+    assert_no_match "drag header",                    @response.body
+    assert_no_match "Service Providers",              @response.body
   end
 
   test "section param filters the visible tiles for a dashboard" do
@@ -114,7 +118,46 @@ class Home::DashboardControllerTest < ActionController::TestCase
     assert_match "Priority Watch", @response.body
     assert_match "CAM 1", @response.body
     assert_match "Camera offline", @response.body
+    assert_match "data-controller=\"dashboard-section\"", @response.body
+    assert_match "Collapse", @response.body
     assert_no_match "CAM 2", @response.body
+  end
+
+  test "recent alerts section renders compact collapsible controls" do
+    original_koala_url = ENV["KOALA_URL"]
+    ENV["KOALA_URL"] = "http://test-koala"
+
+    fake = Object.new
+    fake.define_singleton_method(:list_cameras) { { "data" => { "cameras" => [] } } }
+    fake.define_singleton_method(:recent_alerts) do |**|
+      {
+        "data" => {
+          "alerts" => [
+            {
+              "id" => "alert-123",
+              "label" => "person",
+              "camera_name" => "Front Door",
+              "camera_id" => "cam_1",
+              "confidence" => 0.58,
+              "detected_at" => 6.minutes.ago.iso8601
+            }
+          ]
+        }
+      }
+    end
+
+    stub_client(KoalaClient, instance: fake) do
+      get :index
+    end
+
+    assert_response :success
+    assert_match "Recent Alerts", @response.body
+    assert_match "data-dashboard-section-storage-key-value=\"home-dashboard-camera-alerts\"", @response.body
+    assert_match "Person detected", @response.body
+    assert_match "dashboard-modal#openImage", @response.body
+    assert_match "dashboard-alert-preview", @response.body
+  ensure
+    original_koala_url.nil? ? ENV.delete("KOALA_URL") : ENV["KOALA_URL"] = original_koala_url
   end
 
   test "empty state shown when dashboard has no tiles" do
@@ -284,6 +327,7 @@ class Home::DashboardControllerTest < ActionController::TestCase
   def with_koala_stub(&block)
     fake = Object.new
     fake.define_singleton_method(:list_cameras) { { "data" => { "cameras" => [] } } }
+    fake.define_singleton_method(:recent_alerts) { |**| { "data" => { "alerts" => [] } } }
     stub_client(KoalaClient, instance: fake, &block)
   end
 

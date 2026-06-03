@@ -6,6 +6,12 @@
       "runtimeExecutable": "/usr/local/bin/blink",
       "runtimeArgs": ["forward", "bearclaw-web"],
       "port": 3000
+    },
+    {
+      "name": "bcw-local",
+      "runtimeExecutable": "/Users/joecaruso/Projects/BareSystems/BearClawWeb/dev/preview_up.sh",
+      "runtimeArgs": [],
+      "port": 3000
     }
   ]
 }

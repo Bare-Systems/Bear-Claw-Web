@@ -28,8 +28,8 @@ module Home
             title: item.title,
             row: 1,
             column: 1,
-            width: item.width,
-            height: item.height,
+            width: scaled_width(item.width),
+            height: scaled_height(item.height),
             position: position,
             settings: item.section.present? ? { "section" => item.section } : {}
           )
@@ -55,6 +55,14 @@ module Home
 
     def widget_exists_for?(item)
       @dashboard.dashboard_widgets.exists?(device_capability_id: item.capability.id, widget_type: item.widget_type)
+    end
+
+    def scaled_width(width)
+      @dashboard.default_tile_span(base_span: width)
+    end
+
+    def scaled_height(height)
+      [ (height * @dashboard.density_scale).round, 1 ].max.clamp(1, DashboardTile::MAX_HEIGHT)
     end
   end
 end

@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
+  mount ActionCable.server => "/cable"
 
   # Auth
   get  "/login",                    to: "sessions#new",     as: :login
@@ -65,6 +66,9 @@ Rails.application.routes.draw do
       end
     end
     resources :events, only: [ :index ]
+    get    "network",          to: "network#index",         as: :network
+    post   "network/baseline", to: "network#baseline",      as: :network_baseline
+    patch  "network/device",   to: "network#update_device", as: :network_device
     resources :files, only: [ :index ] do
       member do
         get :download
@@ -91,6 +95,7 @@ Rails.application.routes.draw do
     resources :dashboard_tiles, path: "dashboard/tiles", only: [ :create, :update, :destroy ] do
       collection do
         post :apply_pack
+        post :quick_add
       end
       resources :dashboard_widgets, path: "widgets", only: [ :create ]
     end
@@ -109,6 +114,11 @@ Rails.application.routes.draw do
         get :snapshot
       end
     end
+    resources :alerts, only: [] do
+      member do
+        get :snapshot
+      end
+    end
     resources :zones,    only: [ :index, :show ]
     resources :packages, only: [ :index ]
     resources :firmware, only: [ :index ]
@@ -117,6 +127,8 @@ Rails.application.routes.draw do
   # Settings module — operator+ accessible, provider/integration management
   namespace :settings do
     get "/", to: "integrations#index", as: :root
+    get "/integrations/x/connect", to: "x_integrations#connect", as: :x_connect
+    get "/integrations/x/callback", to: "x_integrations#callback", as: :x_callback
     resources :integrations, only: [ :index, :create, :update, :destroy ]
   end
 

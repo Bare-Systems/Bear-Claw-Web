@@ -29,8 +29,21 @@ class KoalaClient
     request_json(Net::HTTP::Post, "/mcp/tools/koala.list_cameras", payload: { input: {} })
   end
 
+  def recent_alerts(limit: 50)
+    request_json(Net::HTTP::Get, "/admin/alerts", params: { limit: limit })
+  end
+
   def snapshot(camera_id)
     response = perform(Net::HTTP::Get, "/admin/cameras/#{camera_id}/snapshot", accept: "image/jpeg")
+    Download.new(
+      body: response.body || +"",
+      content_type: response["content-type"] || "application/octet-stream",
+      headers: response.each_header.to_h
+    )
+  end
+
+  def alert_snapshot(alert_id)
+    response = perform(Net::HTTP::Get, "/admin/alerts/#{alert_id}/snapshot", accept: "image/jpeg")
     Download.new(
       body: response.body || +"",
       content_type: response["content-type"] || "application/octet-stream",

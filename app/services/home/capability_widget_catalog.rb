@@ -18,7 +18,7 @@ module Home
       ],
       "status" => [
         Entry.new(type: "status_badge",   label: "Status Card",      description: "Displays device health and metadata."),
-        Entry.new(type: "security_stat",  label: "Security Counter", description: "Shows session or campaign count with status badge.")
+        Entry.new(type: "security_stat",  label: "Security Counter", description: "Shows a session, campaign, or network-device count with status badge.")
       ],
       "finance" => [
         Entry.new(type: "portfolio_stat", label: "Portfolio Value",  description: "Displays a USD-formatted portfolio metric with trend coloring."),

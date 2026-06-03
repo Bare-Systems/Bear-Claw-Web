@@ -21,6 +21,7 @@ module Home
 
       upsert_sessions_capability!(sessions)
       upsert_campaigns_capability!(campaigns)
+      upsert_network_capability!
     rescue UrsaClient::Error => e
       connection.update!(
         name:                "Ursa",
@@ -69,6 +70,35 @@ module Home
         "last_seen_at" => Time.current.iso8601
       }
       cap.save!
+    end
+
+    # Home-network device inventory + baseline drift (Ursa Phase 5A). The
+    # untrusted count is the "unknown device joined the network" security
+    # signal — surfaced as a warning status so the widget badge turns amber.
+    #
+    # Isolated rescue: an older Ursa deploy without the network endpoint (404)
+    # must not abort the sessions/campaigns capabilities that already synced.
+    def upsert_network_capability!
+      payload = @client.get_json("/api/v1/network/devices")
+      counts  = payload.is_a?(Hash) ? (payload["counts"] || {}) : {}
+      total   = counts["total"].to_i
+      trusted = counts["trusted"].to_i
+      unknown = counts["untrusted"].to_i
+
+      cap = overview_device.device_capabilities.find_or_initialize_by(key: "ursa_network_devices")
+      cap.name            = "Network Devices"
+      cap.capability_type = "status"
+      cap.configuration   = { "service" => "ursa", "metric" => "network_devices" }
+      cap.state           = {
+        "value"        => total,
+        "unit"         => "devices",
+        "status"       => unknown.positive? ? "warning" : "active",
+        "breakdown"    => { "Total" => total, "Trusted" => trusted, "Unknown" => unknown },
+        "last_seen_at" => Time.current.iso8601
+      }
+      cap.save!
+    rescue UrsaClient::RequestError => e
+      Rails.logger.info("[UrsaDeviceSync] network inventory unavailable: #{e.message}")
     end
 
     def overview_device

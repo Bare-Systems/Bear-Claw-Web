@@ -12,17 +12,25 @@ class User < ApplicationRecord
 
   InviteRequiredError      = Class.new(StandardError)
   InviteEmailMismatchError = Class.new(StandardError)
+  SupportAccessDeniedError = Class.new(StandardError)
 
   def self.from_google(auth, invite: nil)
-    email = auth.info.email.downcase
+    from_omniauth(auth, invite: invite)
+  end
 
-    existing = find_by(google_uid: auth.uid) || find_by(email: email)
+  def self.from_omniauth(auth, invite: nil)
+    email = auth.info.email.to_s.downcase
+    uid   = omniauth_uid(auth)
+
+    raise SupportAccessDeniedError if auth.provider.to_s == "oidc" && !support_email_allowed?(email)
+
+    existing = find_by(google_uid: uid) || find_by(email: email)
 
     if existing
       existing.update!(
-        google_uid: auth.uid,
-        name:       auth.info.name,
-        avatar_url: auth.info.image
+        google_uid: uid,
+        name:       auth.info.name.presence || existing.name,
+        avatar_url: auth.info.image.presence || existing.avatar_url
       )
       # If they arrived via an invite link, accept it to add household membership
       invite&.accept!(existing) if invite&.usable?
@@ -35,14 +43,32 @@ class User < ApplicationRecord
 
     user = new(
       email:      email,
-      google_uid: auth.uid,
-      name:       auth.info.name,
+      google_uid: uid,
+      name:       auth.info.name.presence || email,
       avatar_url: auth.info.image,
       role:       :viewer
     )
     user.save!
     invite.accept!(user)
     user
+  end
+
+  def self.omniauth_uid(auth)
+    provider = auth.provider.to_s
+    uid = auth.uid.to_s
+
+    provider == "google_oauth2" ? uid : "#{provider}:#{uid}"
+  end
+
+  def self.support_email_allowed?(email)
+    allowlist = ENV.fetch("OIDC_ALLOWED_EMAILS", "")
+      .split(",")
+      .map { |entry| entry.strip.downcase }
+      .reject(&:blank?)
+
+    return true if allowlist.empty?
+
+    allowlist.include?(email)
   end
 
   def can_access?(module_name)

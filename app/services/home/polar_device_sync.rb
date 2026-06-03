@@ -21,7 +21,14 @@ module Home
         last_error:          nil
       )
 
-      upsert_inventory!(readings, health)
+      station = upsert_inventory!(readings, health)
+
+      # Outdoor environmental feeds (NOAA weather + AirNow air quality) live on
+      # separate endpoints and are best-effort: a missing token or a stale feed
+      # must not fail the indoor-sensor sync above.
+      sync_outdoor!(station)
+
+      station
     rescue PolarClient::Error => e
       connection.update!(
         name:                "Polar",
@@ -54,6 +61,163 @@ module Home
           health_overall: health["overall"]
         )
       end
+
+      station
+    end
+
+    # ── Outdoor feeds (NOAA weather + AirNow air quality) ───────────────────────
+
+    def sync_outdoor!(station)
+      upsert_weather_device!(station, @client.weather_current)
+    rescue PolarClient::Error => e
+      Rails.logger.warn("[PolarDeviceSync] weather sync skipped: #{e.message}")
+    ensure
+      begin
+        upsert_air_quality_device!(station, @client.air_quality_current)
+      rescue PolarClient::Error => e
+        Rails.logger.warn("[PolarDeviceSync] air quality sync skipped: #{e.message}")
+      end
+    end
+
+    # Outdoor weather → one Device with temperature/humidity/wind/pressure metrics.
+    def upsert_weather_device!(station, weather)
+      return if weather.blank?
+
+      target_id   = weather["target_id"].presence || "polar"
+      stale       = weather["stale"]
+      recorded_at = weather["recorded_at"]
+      quality     = stale ? "unavailable" : (weather["quality"].presence || "good")
+      status      = stale ? "degraded" : "available"
+      source      = weather["source"].presence || "noaa"
+
+      device = Device.find_or_initialize_by(key: "polar-weather-#{target_id}")
+      device.user ||= @user
+      device.service_connection = connection
+      device.parent_device      = station if station
+      device.name               = "Outdoor Weather"
+      device.category           = "sensor"
+      device.source_kind        = "network"
+      device.source_identifier  = "#{target_id}:weather"
+      device.status             = status
+      device.metadata           = {
+        "scope"          => "outdoor",
+        "source"         => source,
+        "source_station" => weather["source_station"],
+        "condition"      => weather["condition"]
+      }.compact
+      device.save!
+
+      seen = []
+      [
+        { metric: "condition",   name: "Condition",  value: nil,                   unit: "",    display: weather["condition"] },
+        { metric: "temperature", name: "Temperature", value: weather["temperature_c"], unit: "°C" },
+        { metric: "humidity",    name: "Humidity",    value: weather["humidity_pct"],  unit: "%" },
+        { metric: "wind_speed",  name: "Wind Speed",  value: weather["wind_speed_ms"], unit: "m/s" },
+        { metric: "pressure",    name: "Pressure",    value: weather["pressure_hpa"],  unit: "hPa" }
+      ].each do |m|
+        next if m[:value].nil? && m[:display].to_s.strip.empty?
+
+        seen << upsert_outdoor_metric!(
+          device:      device,
+          metric:      m[:metric],
+          name:        m[:name],
+          value:       m[:value],
+          unit:        m[:unit],
+          display:     m[:display],
+          source:      source,
+          quality:     quality,
+          status:      status,
+          recorded_at: recorded_at
+        )
+      end
+
+      device.device_capabilities.where(capability_type: "sensor").where.not(key: seen).destroy_all
+      device
+    end
+
+    # Outdoor air quality → one Device with an overall AQI metric plus per-pollutant
+    # metrics (PM2.5, ozone, etc.) when AirNow reports them.
+    def upsert_air_quality_device!(station, aq)
+      return if aq.blank?
+
+      target_id   = aq["target_id"].presence || "polar"
+      stale       = aq["stale"]
+      recorded_at = aq["recorded_at"]
+      quality     = stale ? "unavailable" : "good"
+      status      = stale ? "degraded" : "available"
+      source      = aq["source"].presence || "airnow"
+
+      device = Device.find_or_initialize_by(key: "polar-air-quality-#{target_id}")
+      device.user ||= @user
+      device.service_connection = connection
+      device.parent_device      = station if station
+      device.name               = "Outdoor Air Quality"
+      device.category           = "sensor"
+      device.source_kind        = "network"
+      device.source_identifier  = "#{target_id}:air-quality"
+      device.status             = status
+      device.metadata           = {
+        "scope"          => "outdoor",
+        "source"         => source,
+        "category"       => aq["category"],
+        "reporting_area" => aq["reporting_area"],
+        "stale_reason"   => aq["stale_reason"],
+        # AirNow reports per-pollutant AQI sub-indices (no raw concentrations),
+        # so we keep them here for reference rather than as gauge capabilities
+        # that would mis-render against concentration thresholds.
+        "pollutants"     => Array(aq["pollutants"]).map { |p|
+          { "code" => p["code"], "name" => p["name"], "aqi" => p["aqi"],
+            "category" => p["category"], "primary" => p["primary"] }.compact
+        }
+      }.compact
+      device.save!
+
+      seen = [
+        upsert_outdoor_metric!(
+          device:      device,
+          metric:      "aqi",
+          name:        "Air Quality Index",
+          value:       aq["overall_aqi"],
+          unit:        "AQI",
+          # Leave display nil so the numeric AQI is the headline; the EPA
+          # category ("Good"/"Moderate"/…) already shows via the band badge.
+          display:     nil,
+          source:      source,
+          quality:     quality,
+          status:      status,
+          recorded_at: recorded_at
+        )
+      ]
+
+      device.device_capabilities.where(capability_type: "sensor").where.not(key: seen).destroy_all
+      device
+    end
+
+    # Shared writer for an outdoor metric capability, mirroring the indoor schema
+    # so Home::MetricPresenter renders both identically.
+    def upsert_outdoor_metric!(device:, metric:, name:, value:, unit:, display:, source:, quality:, status:, recorded_at:)
+      key = "metric_#{metric.to_s.parameterize(separator: '_')}"
+
+      capability                 = device.device_capabilities.find_or_initialize_by(key: key)
+      capability.name            = name
+      capability.capability_type = "sensor"
+      capability.configuration   = {
+        "metric" => metric,
+        "source" => source,
+        "scope"  => "outdoor"
+      }.compact
+      capability.state = {
+        "value"           => value,
+        "display_value"   => display.presence,
+        "unit"            => unit.presence,
+        "quality"         => quality,
+        "status"          => status,
+        "last_seen_at"    => recorded_at,
+        "selected_source" => source
+      }.compact
+      capability.save!
+
+      key
     end
 
     # Creates/updates the logical Polar station as the parent Device.

@@ -22,4 +22,15 @@ class KoalaClientTest < ActiveSupport::TestCase
 
     assert_equal "http://192.168.86.53:8082/koala/admin/cameras/cam_1/snapshot", uri.to_s
   end
+
+  test "build_uri encodes the alerts limit query param" do
+    client = KoalaClient.new(
+      base_url: "http://192.168.86.53:8082",
+      token: "test-token"
+    )
+
+    uri = client.send(:build_uri, "/admin/alerts", { limit: 8 })
+
+    assert_equal "http://192.168.86.53:8082/admin/alerts?limit=8", uri.to_s
+  end
 end

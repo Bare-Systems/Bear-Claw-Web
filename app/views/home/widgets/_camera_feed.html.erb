@@ -2,19 +2,24 @@
 <% state = capability&.state_hash || {} %>
 <% camera_id = capability&.camera_id %>
 <% status = capability&.status_label || "unknown" %>
+<% full_bleed_tile = local_assigns[:tile].present? && dashboard_tile_full_bleed_camera?(local_assigns[:tile]) %>
+<% frame_classes = if full_bleed_tile
+  "group relative flex min-h-[8rem] flex-1 items-center justify-center overflow-hidden rounded-xl bg-gray-950"
+else
+  "group relative flex min-h-[8rem] flex-1 items-center justify-center overflow-hidden rounded-b-xl bg-gray-950 sm:rounded-b-2xl"
+end %>
 
 <section
   id="widget-<%= widget.id %>"
-  class="group relative overflow-hidden rounded-b-xl -mx-3 -mb-3 -mt-3 bg-gray-950 sm:-mx-4 sm:-mb-4 sm:-mt-4 sm:rounded-b-2xl"
-  style="min-height: 9rem; flex: 1;"
+  class="<%= frame_classes %>"
   data-controller="camera-feed"
   data-camera-feed-url-value="<%= camera_id.present? ? snapshot_home_camera_path(camera_id) : "" %>"
-  data-camera-feed-interval-value="<%= widget.refresh_interval_seconds * 1000 %>"
+  data-camera-feed-interval-value="<%= dashboard_camera_refresh_interval_seconds(widget) * 1000 %>"
 >
   <%# Full-bleed feed image %>
   <img
     alt="<%= widget.display_title %> live feed"
-    class="hidden h-full w-full object-cover"
+    class="hidden h-full w-full object-contain bg-black"
     data-action="load->camera-feed#loaded error->camera-feed#failed"
     data-camera-feed-target="image"
   >
