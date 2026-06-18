@@ -50,10 +50,18 @@ class Home::DashboardLayoutTest < ApplicationSystemTestCase
 
     assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='row']", text: "6"
     assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='column']", text: "11"
+    # Wait for the move PATCH to commit before starting the resize.
+    # renderTileLayout updates labels immediately (JS preview) but data-row/data-column
+    # are only set by commitLayouts once the server responds. If the resize reads stale
+    # data attributes it will anchor from row=1/col=1, overwriting the move in the DB.
+    assert_selector "#tile-#{@first_tile.id}[data-row='6'][data-column='11']"
 
     resize_tile(@first_tile.id, columns: 12, rows: 10)
 
     assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='size']", text: "32×30"
+    # Wait for the resize PATCH to commit before navigating away, so the DB reflects
+    # the final size before the page reloads.
+    assert_selector "#tile-#{@first_tile.id}[data-width='32'][data-height='30']"
 
     visit home_root_path(edit: 1)
 
