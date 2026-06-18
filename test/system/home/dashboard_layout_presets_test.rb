@@ -35,14 +35,18 @@ class Home::DashboardLayoutPresetsTest < ApplicationSystemTestCase
     assert_text "Focus View saved."
     assert_text "Focus View"
 
-    @first_tile.update!(row: 2, column: 5, width: 4, height: 3)
+    # Use 80-column-grid-appropriate sizes (density upgrader scaled ×10 on first
+    # visit, so base unit is 20). Values of 4×3 are only ~55×41px — too small
+    # for the tile header to be visible through overflow-hidden. 30×20 gives
+    # ~411×274px, comfortably larger than the meta paragraph.
+    @first_tile.update!(row: 2, column: 5, width: 30, height: 20)
     @second_tile.update!(row: 1, column: 1, width: 2, height: 2)
 
     visit home_root_path(edit: 1, dashboard: @dashboard.name)
     within "#tile-#{@first_tile.id}" do
       assert_text "Row 2"
       assert_text "Column 5"
-      assert_text "Size 4×3"
+      assert_text "Size 30×20"
     end
 
     within "section", text: "Layout Presets" do
