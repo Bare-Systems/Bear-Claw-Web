@@ -53,7 +53,7 @@ class Home::DashboardLayoutPresetsTest < ApplicationSystemTestCase
     within "#tile-#{@first_tile.id}" do
       assert_text "Row 1"
       assert_text "Column 1"
-      assert_text "Size 2×2"
+      assert_text "Size 20×20"
     end
   end
 end

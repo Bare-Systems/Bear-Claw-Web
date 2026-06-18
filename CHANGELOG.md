@@ -26,6 +26,9 @@ All notable changes to BearClawWeb are documented here.
 
 ### Fixed
 
+- Fixed widget picker label text invisible in system tests. The `lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]` two-column grid in `_widget_picker.html.erb` left only 124 px for the capability list column at a 1400 px viewport. After nested padding the `<div class="min-w-0">` containing the capability-name `<p>` elements collapsed to zero width, causing Chrome's `innerText` (used by Capybara `element.text`) to return an empty string for the truncated text. Removed the responsive two-column grid so the full aside width is available.
+- Fixed `DashboardLayoutPresetsTest` asserting `"Size 2×2"` after applying a saved preset. The `DashboardDensityUpgrader` runs on the first page visit and upgrades legacy 8-column dashboards (×10 scale factor), so a 2×2 tile becomes 20×20 before the preset is saved. The test now correctly asserts `"Size 20×20"`.
+
 - Fixed `_dashboard_editor.html.erb` NameError: Service Providers / Connections / Devices sections used bare local names (`service_providers`, `service_connections`, `devices`) that were never passed as locals. Wrapped those three admin-only sections in `<% if current_user.admin? %>` (preserving the `assert_no_match "Service Providers"` assertion for operator users) and changed the references to the `@` instance variables the controller already sets.
 
 - Fixed system test null-reference JS crash in `dashboard_layout_test.rb`. The grid element has `data-controller="square-grid dashboard-layout"` (two Stimulus controllers sharing one element), but the test helpers used `[data-controller='dashboard-layout']` (CSS exact-match), which never matched. Changed to `[data-controller~='dashboard-layout']` (CSS word-list match) in the Capybara `assert_selector` and both `document.querySelector` calls inside `move_tile`/`resize_tile` so the grid element is correctly found.
