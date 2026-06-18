@@ -18,9 +18,15 @@ class Home::DashboardLayoutPresetsTest < ApplicationSystemTestCase
     HouseholdMembership.create!(household: household, user: @user)
 
     @dashboard = Dashboard.fetch_or_create_for!(user: @user, context: :home, name: "Layout Lab")
-    @dashboard.update!(settings: @dashboard.settings_hash.merge("columns" => 8))
-    @first_tile = @dashboard.dashboard_tiles.create!(title: "Alpha", row: 1, column: 1, width: 2, height: 2, position: 1)
-    @second_tile = @dashboard.dashboard_tiles.create!(title: "Beta", row: 1, column: 3, width: 2, height: 2, position: 2)
+    # Start at the post-upgrade density so the in-memory AR association on each tile
+    # already reflects columns=80. If we start at columns=8, the density upgrader runs
+    # on the first page visit and updates the DB, but the test-process @dashboard object
+    # (cached on @first_tile via the inverse association) never gets reloaded — the server's
+    # @dashboard.reload only updates the server-side copy. That leaves dashboard.columns=8
+    # in the tile validation, so any width>8 update in the test fails with RecordInvalid.
+    @dashboard.update!(settings: @dashboard.settings_hash.merge("columns" => 80, "density_version" => 3))
+    @first_tile = @dashboard.dashboard_tiles.create!(title: "Alpha", row: 1, column: 1, width: 20, height: 20, position: 1)
+    @second_tile = @dashboard.dashboard_tiles.create!(title: "Beta", row: 1, column: 21, width: 20, height: 20, position: 2)
   end
 
   test "saves and reapplies a named layout preset from the editor" do
