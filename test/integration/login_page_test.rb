@@ -2,11 +2,16 @@ require "test_helper"
 
 class LoginPageTest < ActionDispatch::IntegrationTest
   setup do
+    @old_google_client_id     = ENV["GOOGLE_CLIENT_ID"]
+    @old_google_client_secret = ENV["GOOGLE_CLIENT_SECRET"]
     @old_oidc_support_enabled = ENV["OIDC_SUPPORT_ENABLED"]
-    @old_oidc_issuer_url = ENV["OIDC_ISSUER_URL"]
-    @old_oidc_client_id = ENV["OIDC_CLIENT_ID"]
-    @old_oidc_client_secret = ENV["OIDC_CLIENT_SECRET"]
-    @old_oidc_redirect_uri = ENV["OIDC_REDIRECT_URI"]
+    @old_oidc_issuer_url      = ENV["OIDC_ISSUER_URL"]
+    @old_oidc_client_id       = ENV["OIDC_CLIENT_ID"]
+    @old_oidc_client_secret   = ENV["OIDC_CLIENT_SECRET"]
+    @old_oidc_redirect_uri    = ENV["OIDC_REDIRECT_URI"]
+    # Ensure Google login button renders regardless of ambient environment.
+    ENV["GOOGLE_CLIENT_ID"]     = "test-google-client-id"
+    ENV["GOOGLE_CLIENT_SECRET"] = "test-google-client-secret"
     # Default support login OFF so these tests don't depend on the ambient
     # environment — the homelab/container env sets OIDC_SUPPORT_ENABLED=true,
     # which previously leaked in and rendered the support button unexpectedly.
@@ -15,11 +20,13 @@ class LoginPageTest < ActionDispatch::IntegrationTest
   end
 
   teardown do
+    ENV["GOOGLE_CLIENT_ID"]     = @old_google_client_id
+    ENV["GOOGLE_CLIENT_SECRET"] = @old_google_client_secret
     ENV["OIDC_SUPPORT_ENABLED"] = @old_oidc_support_enabled
-    ENV["OIDC_ISSUER_URL"] = @old_oidc_issuer_url
-    ENV["OIDC_CLIENT_ID"] = @old_oidc_client_id
-    ENV["OIDC_CLIENT_SECRET"] = @old_oidc_client_secret
-    ENV["OIDC_REDIRECT_URI"] = @old_oidc_redirect_uri
+    ENV["OIDC_ISSUER_URL"]      = @old_oidc_issuer_url
+    ENV["OIDC_CLIENT_ID"]       = @old_oidc_client_id
+    ENV["OIDC_CLIENT_SECRET"]   = @old_oidc_client_secret
+    ENV["OIDC_REDIRECT_URI"]    = @old_oidc_redirect_uri
   end
 
   test "login page renders with the shared layout assets and disables turbo prefetch" do

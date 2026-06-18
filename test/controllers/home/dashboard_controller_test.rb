@@ -358,7 +358,14 @@ class Home::DashboardControllerTest < ActionController::TestCase
     fake.define_singleton_method(:get_json) do |path, **|
       path.include?("campaigns") ? { "campaigns" => campaigns } : { "sessions" => [] }
     end
+    saved_url   = ENV["URSA_URL"]
+    saved_token = ENV["URSA_TOKEN"]
+    ENV["URSA_URL"]   = "http://test-ursa"
+    ENV["URSA_TOKEN"] = "test-token"
     stub_client(UrsaClient, instance: fake, &block)
+  ensure
+    saved_url.nil?   ? ENV.delete("URSA_URL")   : ENV.store("URSA_URL",   saved_url)
+    saved_token.nil? ? ENV.delete("URSA_TOKEN") : ENV.store("URSA_TOKEN", saved_token)
   end
 
   def stub_client(klass, instance: nil, raises: nil)
