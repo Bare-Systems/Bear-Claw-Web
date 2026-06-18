@@ -66,7 +66,11 @@ module ApplicationHelper
   end
 
   def bearclaw_chat_widget_enabled?
-    current_user&.can_access?(:agent)
+    # Suppress the floating launcher in edit mode: the dashboard editor panel
+    # occupies the same visual area as the fixed bottom-left launcher, and
+    # z-index:50 on the launcher intercepts clicks on deeply-scrolled form
+    # elements (e.g. the "Add Widget" submit button in the widget picker).
+    current_user&.can_access?(:agent) && params[:edit].blank?
   end
 
   def bearclaw_chat_widget_embedded?
