@@ -26,6 +26,8 @@ All notable changes to BearClawWeb are documented here.
 
 ### Fixed
 
+- Fixed system test null-reference JS crash in `dashboard_layout_test.rb`. The grid element has `data-controller="square-grid dashboard-layout"` (two Stimulus controllers sharing one element), but the test helpers used `[data-controller='dashboard-layout']` (CSS exact-match), which never matched. Changed to `[data-controller~='dashboard-layout']` (CSS word-list match) in the Capybara `assert_selector` and both `document.querySelector` calls inside `move_tile`/`resize_tile` so the grid element is correctly found.
+
 - Fixed recurring bearclaw-web→Koala MCP `401`s on deploy. `KOALA_TOKEN` was listed in the homelab Blink provisioner's `always_update`, so every deploy overwrote the correct token with a stale placeholder coming from the Blink MCP server's process environment (which overrides the `.env` files). Removed `KOALA_TOKEN` from `always_update` so it is seeded once and preserved across deploys, consistent with `URSA_TOKEN`/`KODIAK_TOKEN`/`POLAR_TOKEN`; a clean redeploy now preserves the token and passes the full Blink verify suite (14/14) with no manual intervention.
 - Fixed test env-var leakage that failed the deploy verify gate. `LoginPageTest` and `Settings::XIntegrationsControllerTest` depended on `OIDC_SUPPORT_ENABLED` / `X_REDIRECT_URI` being unset, but the homelab/container environment sets them — so the support-login button and a configured X callback URL leaked into the tests. The tests now isolate those env vars in setup/teardown (feature code unchanged). Also corrected `Home::DashboardResetterTest`'s stale tile-geometry expectation (`[1,1,2,2]`→`[1,1,20,20]`) to match the 80-column density rework (restore seeds a 1×1 tile, the density upgrader scales ×20).
 

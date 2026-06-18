@@ -43,7 +43,7 @@ class Home::DashboardLayoutTest < ApplicationSystemTestCase
     login_as_test_user
     visit home_root_path(edit: 1)
 
-    assert_selector "[data-controller='dashboard-layout'][data-dashboard-layout-ready='true']"
+    assert_selector "[data-controller~='dashboard-layout'][data-dashboard-layout-ready='true']"
     assert_selector "#tile-#{@first_tile.id} [data-dashboard-layout-field='size']", text: "20×20"
 
     move_tile(@first_tile.id, columns: 10, rows: 5)
@@ -88,7 +88,7 @@ class Home::DashboardLayoutTest < ApplicationSystemTestCase
     page.execute_script(<<~JS)
       (() => {
         const handle = document.querySelector("#tile-#{tile_id} [data-action*='startMove']")
-        const grid = document.querySelector("[data-controller='dashboard-layout']")
+        const grid = document.querySelector("[data-controller~='dashboard-layout']")
         const tile = document.querySelector("#tile-#{tile_id}")
         const firstTile = grid.querySelector("[data-dashboard-layout-target='item']")
         const firstHeight = firstTile ? firstTile.getBoundingClientRect().height : 256
@@ -111,7 +111,7 @@ class Home::DashboardLayoutTest < ApplicationSystemTestCase
     page.execute_script(<<~JS)
       (() => {
         const handle = document.querySelector("#tile-#{tile_id} [data-action*='startResize']")
-        const grid = document.querySelector("[data-controller='dashboard-layout']")
+        const grid = document.querySelector("[data-controller~='dashboard-layout']")
         const tile = document.querySelector("#tile-#{tile_id}")
         const firstTile = grid.querySelector("[data-dashboard-layout-target='item']")
         const firstHeight = firstTile ? firstTile.getBoundingClientRect().height : 256
