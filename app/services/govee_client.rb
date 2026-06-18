@@ -57,10 +57,10 @@ class GoveeClient
     http.read_timeout = 30
 
     request = case method.upcase
-              when "GET"  then Net::HTTP::Get.new(uri)
-              when "POST" then Net::HTTP::Post.new(uri)
-              else raise ArgumentError, "Unsupported method: #{method}"
-              end
+    when "GET"  then Net::HTTP::Get.new(uri)
+    when "POST" then Net::HTTP::Post.new(uri)
+    else raise ArgumentError, "Unsupported method: #{method}"
+    end
 
     request["Govee-API-Key"] = @api_key
     request["Content-Type"]  = "application/json"

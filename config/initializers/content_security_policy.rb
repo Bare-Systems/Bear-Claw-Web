@@ -19,5 +19,5 @@ Rails.application.configure do
 
   # Importmap emits inline boot scripts, so BearClaw needs per-request nonces.
   config.content_security_policy_nonce_generator = ->(request) { request.session.id.to_s }
-  config.content_security_policy_nonce_directives = %w(script-src)
+  config.content_security_policy_nonce_directives = %w[script-src]
 end

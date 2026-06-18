@@ -7,6 +7,11 @@ class LoginPageTest < ActionDispatch::IntegrationTest
     @old_oidc_client_id = ENV["OIDC_CLIENT_ID"]
     @old_oidc_client_secret = ENV["OIDC_CLIENT_SECRET"]
     @old_oidc_redirect_uri = ENV["OIDC_REDIRECT_URI"]
+    # Default support login OFF so these tests don't depend on the ambient
+    # environment — the homelab/container env sets OIDC_SUPPORT_ENABLED=true,
+    # which previously leaked in and rendered the support button unexpectedly.
+    # The "enabled by config" test opts back in explicitly.
+    ENV["OIDC_SUPPORT_ENABLED"] = "false"
   end
 
   teardown do

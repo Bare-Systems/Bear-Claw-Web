@@ -5,6 +5,7 @@ Rails.application.routes.draw do
   # Auth
   get  "/login",                    to: "sessions#new",     as: :login
   post "/logout",                   to: "sessions#destroy", as: :logout
+  get  "/auth/portal",              to: "sessions#portal",  as: :portal_sso
   get  "/auth/:provider/callback",  to: "sessions#create"
   get  "/auth/failure",             to: "sessions#failure"
   get  "/invites/:token/accept",    to: "sessions#accept_invite", as: :accept_invite
@@ -154,7 +155,7 @@ Rails.application.routes.draw do
   namespace :admin do
     get "/",       to: "dashboard#index", as: :root
     resources :users
-    resources :invites, only: [:index, :create, :destroy]
+    resources :invites, only: [ :index, :create, :destroy ]
     get :settings, to: "settings#index"
     get :audit,    to: "audit#index"
   end

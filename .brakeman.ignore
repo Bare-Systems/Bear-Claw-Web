@@ -1,0 +1,12 @@
+{
+  "ignored_warnings": [
+    {
+      "fingerprint": "01a88a0a17848e70999c17f6438a636b00e01da39a2c0aa0c46f20f0685c7202",
+      "note": "Admin controller intentionally permits :role — only accessible to authenticated admins."
+    },
+    {
+      "fingerprint": "739c073c9f69b010c4309cd93e1d1d0fc008a93ebc757ebe241b3e45e61323ef",
+      "note": "Intentional: HEAD requests on error paths fall through to the redirect branch, which is acceptable behavior."
+    }
+  ]
+}

@@ -21,7 +21,7 @@ class RenameHomesToHouseholds < ActiveRecord::Migration[8.0]
         t.string     :role,      null: false, default: "member"
         t.timestamps
       end
-      add_index :household_memberships, [:household_id, :user_id], unique: true
+      add_index :household_memberships, [ :household_id, :user_id ], unique: true
     end
 
     # invites — rename home_id → household_id if needed, or create table

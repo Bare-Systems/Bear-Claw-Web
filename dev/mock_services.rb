@@ -80,7 +80,7 @@ NOW = "2026-03-20T22:00:00Z"
 
 CAMERAS = (1..8).map do |n|
   zones = %w[front back side garage driveway yard porch stairs]
-  names = ["Front Door", "Back Yard", "Side Gate", "Garage", "Driveway", "Yard", "Front Porch", "Stairs"]
+  names = [ "Front Door", "Back Yard", "Side Gate", "Garage", "Driveway", "Yard", "Front Porch", "Stairs" ]
   {
     "id"         => "cam_#{n}",
     "name"       => names[n - 1],
@@ -101,7 +101,7 @@ POLAR_READINGS = [
   { "station_id" => "home-station", "sensor_id" => "indoor",  "metric" => "voc",         "value" => 0.12,  "unit" => "mg/m3",  "source" => "indoor",  "quality_flag" => "good", "recorded_at" => NOW, "received_at" => NOW },
   { "station_id" => "home-station", "sensor_id" => "outdoor", "metric" => "temperature", "value" => 52.1,  "unit" => "F",      "source" => "outdoor", "quality_flag" => "good", "recorded_at" => NOW, "received_at" => NOW },
   { "station_id" => "home-station", "sensor_id" => "outdoor", "metric" => "humidity",    "value" => 61.4,  "unit" => "%",      "source" => "outdoor", "quality_flag" => "good", "recorded_at" => NOW, "received_at" => NOW },
-  { "station_id" => "home-station", "sensor_id" => "outdoor", "metric" => "radon",       "value" => 1.2,   "unit" => "pCi/L",  "source" => "outdoor", "quality_flag" => "good", "recorded_at" => NOW, "received_at" => NOW },
+  { "station_id" => "home-station", "sensor_id" => "outdoor", "metric" => "radon",       "value" => 1.2,   "unit" => "pCi/L",  "source" => "outdoor", "quality_flag" => "good", "recorded_at" => NOW, "received_at" => NOW }
 ]
 
 POLAR_HEALTH = {
@@ -117,28 +117,28 @@ POLAR_HEALTH = {
 
 SESSIONS = [
   { "id" => "sess-001", "hostname" => "workstation-01", "os" => "Windows 11",    "status" => "active",
-    "campaign" => "internal-assessment", "tags" => ["workstation"],      "last_seen" => NOW, "created_at" => NOW },
+    "campaign" => "internal-assessment", "tags" => [ "workstation" ],      "last_seen" => NOW, "created_at" => NOW },
   { "id" => "sess-002", "hostname" => "server-02",      "os" => "Ubuntu 22.04",  "status" => "active",
-    "campaign" => "internal-assessment", "tags" => ["server", "linux"], "last_seen" => NOW, "created_at" => NOW },
+    "campaign" => "internal-assessment", "tags" => [ "server", "linux" ], "last_seen" => NOW, "created_at" => NOW }
 ]
 
 MOCK_TASKS = [
   { "id" => "task-001", "session_id" => "sess-001", "task_type" => "shell", "status" => "completed",
     "command" => "whoami", "output" => "CORP\\jdoe", "created_at" => NOW, "completed_at" => NOW },
   { "id" => "task-002", "session_id" => "sess-001", "task_type" => "shell", "status" => "pending",
-    "command" => "ipconfig /all", "output" => nil, "created_at" => NOW, "completed_at" => nil },
+    "command" => "ipconfig /all", "output" => nil, "created_at" => NOW, "completed_at" => nil }
 ]
 
 EVENTS = [
   { "id" => "evt-001", "level" => "info",    "message" => "Session registered",          "source" => "implant",   "session_id" => "sess-001", "timestamp" => NOW },
   { "id" => "evt-002", "level" => "warning", "message" => "AV process detected on host", "source" => "detection", "session_id" => "sess-001", "timestamp" => NOW },
-  { "id" => "evt-003", "level" => "info",    "message" => "Session registered",          "source" => "implant",   "session_id" => "sess-002", "timestamp" => NOW },
+  { "id" => "evt-003", "level" => "info",    "message" => "Session registered",          "source" => "implant",   "session_id" => "sess-002", "timestamp" => NOW }
 ]
 
 CHECKLIST_ITEMS = [
   { "id" => "chk-1", "title" => "Enumerate domain users", "status" => "done", "owner" => "joe", "due_at" => nil, "details" => "Use BloodHound for AD enumeration." },
   { "id" => "chk-2", "title" => "Pivot to server subnet",  "status" => "open", "owner" => "joe", "due_at" => nil, "details" => nil },
-  { "id" => "chk-3", "title" => "Capture credentials",     "status" => "open", "owner" => nil,   "due_at" => nil, "details" => nil },
+  { "id" => "chk-3", "title" => "Capture credentials",     "status" => "open", "owner" => nil,   "due_at" => nil, "details" => nil }
 ]
 
 CAMPAIGN = {
@@ -147,7 +147,7 @@ CAMPAIGN = {
   "description"      => "Q1 internal network assessment",
   "status"           => "active",
   "created_at"       => NOW,
-  "notes"            => [{ "id" => "note-1", "body" => "Initial foothold via phishing simulation", "note" => "Initial foothold via phishing simulation", "author" => "joe", "created_at" => NOW }],
+  "notes"            => [ { "id" => "note-1", "body" => "Initial foothold via phishing simulation", "note" => "Initial foothold via phishing simulation", "author" => "joe", "created_at" => NOW } ],
   "checklist"        => CHECKLIST_ITEMS,
   "checklist_items"  => CHECKLIST_ITEMS,
   "checklist_counts" => { "done" => 1, "open" => 2 },
@@ -158,7 +158,7 @@ CAMPAIGN = {
   "timeline"         => [
     { "kind" => "event",   "ts" => NOW, "summary" => "Session sess-001 registered", "severity" => "info" },
     { "kind" => "task",    "ts" => NOW, "summary" => "Task task-001 completed (whoami)", "severity" => "info" },
-    { "kind" => "event",   "ts" => NOW, "summary" => "AV process detected on host", "severity" => "warning" },
+    { "kind" => "event",   "ts" => NOW, "summary" => "AV process detected on host", "severity" => "warning" }
   ],
   "sessions" => SESSIONS,
   "tasks"    => MOCK_TASKS,
@@ -195,14 +195,14 @@ PLACEHOLDER_JPEG = File.binread(File.join(__dir__, "camera_placeholder.png")).fr
 
 koala_thread = Thread.new do
   serve(8082, "Koala") do |req, client|
-    case [req[:method], req[:path]]
-    in ["GET", "/healthz"]
+    case [ req[:method], req[:path] ]
+    in [ "GET", "/healthz" ]
       json_resp(client, { status: "ok" })
 
-    in ["POST", "/mcp/tools/koala.list_cameras"]
+    in [ "POST", "/mcp/tools/koala.list_cameras" ]
       json_resp(client, { data: { cameras: CAMERAS } })
 
-    in ["GET", path] if path.match?(%r{\A/admin/cameras/[^/]+/snapshot\z})
+    in [ "GET", path ] if path.match?(%r{\A/admin/cameras/[^/]+/snapshot\z})
       send_response(client, content_type: "image/jpeg", body: PLACEHOLDER_JPEG)
 
     else
@@ -215,14 +215,14 @@ end
 
 polar_thread = Thread.new do
   serve(6703, "Polar") do |req, client|
-    case [req[:method], req[:path]]
-    in ["GET", "/healthz"]
+    case [ req[:method], req[:path] ]
+    in [ "GET", "/healthz" ]
       json_resp(client, { status: "ok" })
 
-    in ["GET", "/v1/readings/latest"]
+    in [ "GET", "/v1/readings/latest" ]
       json_resp(client, POLAR_READINGS)
 
-    in ["GET", "/v1/station/health"]
+    in [ "GET", "/v1/station/health" ]
       json_resp(client, POLAR_HEALTH)
 
     else
@@ -237,17 +237,17 @@ ursa_thread = Thread.new do
   serve(6707, "Ursa") do |req, client|
     path = req[:path]
 
-    case [req[:method], path]
-    in ["GET", "/healthz"]
+    case [ req[:method], path ]
+    in [ "GET", "/healthz" ]
       json_resp(client, { status: "ok" })
 
-    in ["GET", "/api/v1/overview"]
+    in [ "GET", "/api/v1/overview" ]
       json_resp(client, OVERVIEW)
 
-    in ["GET", "/api/v1/sessions"]
+    in [ "GET", "/api/v1/sessions" ]
       json_resp(client, { sessions: SESSIONS })
 
-    in ["GET", p] if p.match?(%r{\A/api/v1/sessions/[^/]+\z})
+    in [ "GET", p ] if p.match?(%r{\A/api/v1/sessions/[^/]+\z})
       id = path.split("/").last
       session = SESSIONS.find { |s| s["id"] == id } || SESSIONS.first
       json_resp(client, {
@@ -257,39 +257,39 @@ ursa_thread = Thread.new do
         events:  EVENTS.select { |e| e["session_id"] == session["id"] }
       })
 
-    in ["GET", "/api/v1/tasks"]
+    in [ "GET", "/api/v1/tasks" ]
       json_resp(client, { tasks: MOCK_TASKS })
 
-    in ["GET", p] if p.match?(%r{\A/api/v1/tasks/[^/]+\z})
+    in [ "GET", p ] if p.match?(%r{\A/api/v1/tasks/[^/]+\z})
       id = path.split("/").last
       task = MOCK_TASKS.find { |t| t["id"] == id } || MOCK_TASKS.first
       json_resp(client, { task: task })
 
-    in ["GET", "/api/v1/events"]
+    in [ "GET", "/api/v1/events" ]
       json_resp(client, { events: EVENTS })
 
-    in ["GET", "/api/v1/campaigns"]
-      json_resp(client, { campaigns: [CAMPAIGN] })
+    in [ "GET", "/api/v1/campaigns" ]
+      json_resp(client, { campaigns: [ CAMPAIGN ] })
 
-    in ["GET", "/api/v1/campaigns/playbooks"]
+    in [ "GET", "/api/v1/campaigns/playbooks" ]
       json_resp(client, { playbooks: [] })
 
-    in ["GET", p] if p.match?(%r{\A/api/v1/campaigns/[^/]+/handoff\z})
+    in [ "GET", p ] if p.match?(%r{\A/api/v1/campaigns/[^/]+/handoff\z})
       json_resp(client, CAMPAIGN)
 
-    in ["GET", p] if p.match?(%r{\A/api/v1/campaigns/[^/]+\z})
+    in [ "GET", p ] if p.match?(%r{\A/api/v1/campaigns/[^/]+\z})
       json_resp(client, CAMPAIGN)
 
-    in ["GET", "/api/v1/governance"]
+    in [ "GET", "/api/v1/governance" ]
       json_resp(client, GOVERNANCE)
 
-    in ["GET", "/api/v1/governance/report"]
+    in [ "GET", "/api/v1/governance/report" ]
       json_resp(client, { report: GOVERNANCE })
 
-    in ["GET", "/api/v1/files"]
+    in [ "GET", "/api/v1/files" ]
       json_resp(client, { files: [] })
 
-    in ["GET", "/api/v1/users"]
+    in [ "GET", "/api/v1/users" ]
       json_resp(client, { users: [] })
 
     else
@@ -314,25 +314,25 @@ end
 CRON_JOBS = [
   { "id" => "cron-001", "name" => "Health check",        "schedule" => "*/5 * * * *",  "command" => "health_check",   "args" => {}, "enabled" => true,  "last_run_at" => NOW, "last_status" => "ok",    "next_run_at" => NOW },
   { "id" => "cron-002", "name" => "Docker stack report", "schedule" => "0 8 * * *",    "command" => "docker_report",  "args" => {}, "enabled" => true,  "last_run_at" => NOW, "last_status" => "ok",    "next_run_at" => NOW },
-  { "id" => "cron-003", "name" => "Disk usage alert",    "schedule" => "0 */6 * * *",  "command" => "disk_check",     "args" => {}, "enabled" => false, "last_run_at" => NOW, "last_status" => "error", "next_run_at" => nil  },
+  { "id" => "cron-003", "name" => "Disk usage alert",    "schedule" => "0 */6 * * *",  "command" => "disk_check",     "args" => {}, "enabled" => false, "last_run_at" => NOW, "last_status" => "error", "next_run_at" => nil  }
 ]
 
 MEMORY_ENTRIES = [
   { "id" => "mem-001", "type" => "user",      "name" => "user_role",          "description" => "Primary homelab operator",          "content" => "Joe is the primary homelab operator and admin. He uses BearClaw to manage the Bare Systems stack on blink.",        "created_at" => NOW },
   { "id" => "mem-002", "type" => "project",   "name" => "bearclaw_vision",    "description" => "BearClaw is the AI DevOps agent",    "content" => "BearClaw is built to be Joe's on-call DevOps agent — SSH into blink, inspect containers, restart services.",        "created_at" => NOW },
   { "id" => "mem-003", "type" => "feedback",  "name" => "terse_responses",    "description" => "Keep responses concise",             "content" => "Joe prefers terse, direct responses. Skip preamble and filler. Lead with the answer.",                              "created_at" => NOW },
-  { "id" => "mem-004", "type" => "reference", "name" => "proxmox_url",        "description" => "Proxmox management UI",              "content" => "Proxmox web UI at https://blink:8006. Docker stack managed via Portainer through Tardigrade reverse proxy.",         "created_at" => NOW },
+  { "id" => "mem-004", "type" => "reference", "name" => "proxmox_url",        "description" => "Proxmox management UI",              "content" => "Proxmox web UI at https://blink:8006. Docker stack managed via Portainer through Tardigrade reverse proxy.",         "created_at" => NOW }
 ]
 
 bearclaw_thread = Thread.new do
   serve(8080, "BearClaw") do |req, client|
     path = req[:path]
 
-    case [req[:method], path]
-    in ["GET", "/health"] | ["GET", "/healthz"]
+    case [ req[:method], path ]
+    in [ "GET", "/health" ] | [ "GET", "/healthz" ]
       json_resp(client, { status: "ok" })
 
-    in ["POST", "/v1/chat"]
+    in [ "POST", "/v1/chat" ]
       body = JSON.parse(req[:body].to_s) rescue {}
       msg  = body["message"].to_s
       json_resp(client, {
@@ -342,27 +342,27 @@ bearclaw_thread = Thread.new do
         }
       })
 
-    in ["GET", "/v1/cron"]
+    in [ "GET", "/v1/cron" ]
       json_resp(client, { "jobs" => CRON_JOBS })
 
-    in ["POST", "/v1/cron"]
+    in [ "POST", "/v1/cron" ]
       body = JSON.parse(req[:body].to_s) rescue {}
       new_job = body.merge("id" => "cron-#{SecureRandom.hex(4)}", "last_run_at" => nil, "last_status" => nil, "next_run_at" => nil)
       json_resp(client, { "job" => new_job }, status: 201)
 
-    in ["PATCH", p] if p.match?(%r{\A/v1/cron/[^/]+\z})
+    in [ "PATCH", p ] if p.match?(%r{\A/v1/cron/[^/]+\z})
       id   = path.split("/").last
       job  = CRON_JOBS.find { |j| j["id"] == id } || { "id" => id }
       body = JSON.parse(req[:body].to_s) rescue {}
       json_resp(client, { "job" => job.merge(body) })
 
-    in ["DELETE", p] if p.match?(%r{\A/v1/cron/[^/]+\z})
+    in [ "DELETE", p ] if p.match?(%r{\A/v1/cron/[^/]+\z})
       json_resp(client, { "ok" => true })
 
-    in ["GET", "/v1/memory"]
+    in [ "GET", "/v1/memory" ]
       json_resp(client, { "entries" => MEMORY_ENTRIES })
 
-    in ["DELETE", p] if p.match?(%r{\A/v1/memory/[^/]+\z})
+    in [ "DELETE", p ] if p.match?(%r{\A/v1/memory/[^/]+\z})
       json_resp(client, { "ok" => true })
 
     else
@@ -373,4 +373,4 @@ end
 
 # ── Run ───────────────────────────────────────────────────────────────────────
 
-[bearclaw_thread, koala_thread, polar_thread, ursa_thread].each(&:join)
+[ bearclaw_thread, koala_thread, polar_thread, ursa_thread ].each(&:join)

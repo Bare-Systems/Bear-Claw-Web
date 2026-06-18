@@ -44,38 +44,7 @@
         <% if @devices.empty? %>
           <tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">No devices recorded yet. Run a network scan to populate the inventory.</td></tr>
         <% end %>
-        <% @devices.each do |device| %>
-          <% trusted = ActiveModel::Type::Boolean.new.cast(device["trusted"]) %>
-          <tr class="hover:bg-gray-800/40 <%= "bg-amber-950/20" unless trusted %>">
-            <td class="px-4 py-3 text-white font-mono"><%= device["ip"].presence || "-" %></td>
-            <td class="px-4 py-3 text-gray-300 font-mono text-xs"><%= device["mac"] %></td>
-            <td class="px-4 py-3 text-gray-400"><%= device["vendor"].presence || "-" %></td>
-            <td class="px-4 py-3">
-              <%= form_with url: security_network_device_path, method: :patch, class: "flex gap-1 items-center" do %>
-                <%= hidden_field_tag :mac, device["mac"] %>
-                <%= hidden_field_tag :trusted, trusted %>
-                <%= text_field_tag :label, device["label"], placeholder: "name…",
-                      class: "bg-gray-950 border border-gray-800 rounded px-2 py-1 text-xs text-white w-28" %>
-                <%= submit_tag "Save", class: "px-2 py-1 rounded border border-gray-700 text-gray-300 text-xs cursor-pointer" %>
-              <% end %>
-            </td>
-            <td class="px-4 py-3">
-              <span class="text-xs px-2 py-1 rounded-full <%= trusted ? ursa_status_classes("active") : ursa_status_classes("warning") %>">
-                <%= trusted ? "trusted" : "unknown" %>
-              </span>
-            </td>
-            <td class="px-4 py-3 text-gray-400"><%= ursa_time_ago(device["last_seen"]) %></td>
-            <td class="px-4 py-3 text-gray-400 text-right"><%= device["times_seen"] || 1 %></td>
-            <td class="px-4 py-3 text-right">
-              <%= form_with url: security_network_device_path, method: :patch, class: "inline" do %>
-                <%= hidden_field_tag :mac, device["mac"] %>
-                <%= hidden_field_tag :trusted, !trusted %>
-                <%= submit_tag trusted ? "Untrust" : "Trust",
-                      class: "px-3 py-1 rounded-lg text-xs cursor-pointer #{trusted ? "border border-gray-700 text-gray-300" : "bg-emerald-700 hover:bg-emerald-600 text-white"}" %>
-              <% end %>
-            </td>
-          </tr>
-        <% end %>
+        <%= render partial: "device_row", collection: @devices, as: :device %>
       </tbody>
     </table>
   </div>

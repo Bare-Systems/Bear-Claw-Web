@@ -12,7 +12,25 @@ class ApplicationController < ActionController::Base
   end
 
   def require_login
-    redirect_to login_path unless current_user
+    return if current_user
+    if (url = portal_redirect_url)
+      redirect_to url, allow_other_host: true
+    else
+      redirect_to login_path
+    end
+  end
+
+  # The Portal is the single front door. When PORTAL_URL is configured this
+  # device has no login page of its own — unauthenticated users (and logout) are
+  # sent to the Portal's device-selection dashboard. Falls back to the local
+  # login only for standalone/LAN deploys where PORTAL_URL is unset.
+  def portal_base_url
+    ENV["PORTAL_URL"].presence
+  end
+
+  def portal_redirect_url(path = "/app")
+    base = portal_base_url
+    "#{base.chomp('/')}#{path}" if base
   end
 
   def require_role(*roles)

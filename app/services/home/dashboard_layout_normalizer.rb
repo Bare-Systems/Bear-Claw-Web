@@ -52,7 +52,7 @@ module Home
     def clamp_column(column, width)
       minimum = 1
       maximum = [ @columns - width + 1, 1 ].max
-      [[ column.to_i, minimum ].max, maximum].min
+      [ [ column.to_i, minimum ].max, maximum ].min
     end
 
     def find_first_fit(occupied, width, height)

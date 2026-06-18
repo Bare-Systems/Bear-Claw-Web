@@ -63,6 +63,7 @@ Rails.application.configure do
   # The Rails container is only reachable from localhost so this is safe.
   config.hosts = [
     "bearclaw.baresystems.com",
+    "app.baresystems.com",
     "192.168.86.53",
     "127.0.0.1:6701"
   ]

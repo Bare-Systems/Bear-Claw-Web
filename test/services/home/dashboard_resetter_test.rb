@@ -65,7 +65,9 @@ class Home::DashboardResetterTest < ActiveSupport::TestCase
     @dashboard.reload
 
     assert_equal [ "CAM 1", "CAM 2", "CAM 3", "CAM 4" ], @dashboard.dashboard_tiles.order(:position).pluck(:title)
-    assert_equal [ 1, 1, 2, 2 ], @dashboard.dashboard_tiles.order(:position).first.attributes.values_at("row", "column", "width", "height")
+    # restore_defaults! seeds a 1×1 camera tile on the 4-column grid, then the
+    # density upgrader scales by 80/4 = 20 → a 20×20 tile on the fine grid.
+    assert_equal [ 1, 1, 20, 20 ], @dashboard.dashboard_tiles.order(:position).first.attributes.values_at("row", "column", "width", "height")
     assert_nil @dashboard.dashboard_tiles.order(:position).first.settings_hash["section"]
 
     history = Home::DashboardLayoutHistory.new(dashboard: @dashboard)

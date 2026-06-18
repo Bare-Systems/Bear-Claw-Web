@@ -32,6 +32,5 @@ module Agent
         format.html { redirect_to agent_chat_index_path }
       end
     end
-
   end
 end

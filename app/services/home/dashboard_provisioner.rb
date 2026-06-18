@@ -207,9 +207,9 @@ module Home
       all_caps.each_with_index do |cap, index|
         widget_type = if cap.capability_type == "status"
                         "status_badge"
-                      else
+        else
                         "portfolio_stat"
-                      end
+        end
 
         tile = dashboard.dashboard_tiles.create!(
           title:    cap.name,

@@ -41,7 +41,7 @@ class Security::EventsControllerTest < ActionController::TestCase
 
     assert_response :success
     assert_equal "/api/v1/events", requested_path
-    assert_equal({"level" => "warning"}, requested_params)
+    assert_equal({ "level" => "warning" }, requested_params)
     assert_match security_events_path, @response.body
     assert_match "Policy alert", @response.body
   end

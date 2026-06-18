@@ -8,6 +8,14 @@ class Settings::XIntegrationsControllerTest < ActionController::TestCase
     @user = User.find_by!(email: users(:one)["email"])
     @user.update!(role: :operator)
     @request.session[:user_id] = @user.id
+    # These tests assert the OAuth redirect_uri falls back to settings_x_callback_url,
+    # which requires X_REDIRECT_URI unset. The homelab/container env sets it to the
+    # production callback, so clear it for the test and restore in teardown.
+    @old_x_redirect_uri = ENV.delete("X_REDIRECT_URI")
+  end
+
+  teardown do
+    ENV["X_REDIRECT_URI"] = @old_x_redirect_uri if @old_x_redirect_uri
   end
 
   test "connect redirects to x authorization url and stores pkce session data" do
