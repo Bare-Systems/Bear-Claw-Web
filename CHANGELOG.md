@@ -26,6 +26,8 @@ All notable changes to BearClawWeb are documented here.
 
 ### Fixed
 
+- Fixed `_dashboard_editor.html.erb` NameError: Service Providers / Connections / Devices sections used bare local names (`service_providers`, `service_connections`, `devices`) that were never passed as locals. Wrapped those three admin-only sections in `<% if current_user.admin? %>` (preserving the `assert_no_match "Service Providers"` assertion for operator users) and changed the references to the `@` instance variables the controller already sets.
+
 - Fixed system test null-reference JS crash in `dashboard_layout_test.rb`. The grid element has `data-controller="square-grid dashboard-layout"` (two Stimulus controllers sharing one element), but the test helpers used `[data-controller='dashboard-layout']` (CSS exact-match), which never matched. Changed to `[data-controller~='dashboard-layout']` (CSS word-list match) in the Capybara `assert_selector` and both `document.querySelector` calls inside `move_tile`/`resize_tile` so the grid element is correctly found.
 
 - Fixed recurring bearclaw-web→Koala MCP `401`s on deploy. `KOALA_TOKEN` was listed in the homelab Blink provisioner's `always_update`, so every deploy overwrote the correct token with a stale placeholder coming from the Blink MCP server's process environment (which overrides the `.env` files). Removed `KOALA_TOKEN` from `always_update` so it is seeded once and preserved across deploys, consistent with `URSA_TOKEN`/`KODIAK_TOKEN`/`POLAR_TOKEN`; a clean redeploy now preserves the token and passes the full Blink verify suite (14/14) with no manual intervention.
