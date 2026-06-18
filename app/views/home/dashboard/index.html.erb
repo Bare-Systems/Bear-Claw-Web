@@ -118,6 +118,11 @@
           dashboard: @dashboard,
           selected_section: @selected_section,
           available_capabilities: @available_capabilities %>
+        <%= render "home/dashboard_editor",
+          dashboard: @dashboard,
+          selected_section: @selected_section,
+          available_capabilities: @available_capabilities,
+          visible_tiles: @visible_tiles %>
       <% end %>
 
       <% if @camera_alerts.present? %>

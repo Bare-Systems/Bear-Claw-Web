@@ -125,6 +125,7 @@ jobs:
           RAILS_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
           KOALA_URL: http://test-koala-not-configured
+          KOALA_TOKEN: test-token-not-configured
         run: bin/rails db:test:prepare test:system
 
       - name: Keep screenshots from failed system tests
